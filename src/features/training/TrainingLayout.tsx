@@ -57,12 +57,27 @@ export default function TrainingLayout() {
       {/* Bottom navigation — only shown on screens that aren't in the active workout flow */}
       <nav
         className={cn(
-          "absolute left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 w-[calc(100%-2rem)] md:w-full md:max-w-md bg-blue-100/90 dark:bg-blue-950/90 backdrop-blur-lg border border-blue-200/80 dark:border-blue-900/60 rounded-[28px] shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] z-50 transition-all duration-300",
+          "absolute left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 w-[calc(100%-2rem)] md:w-full md:max-w-md",
+          "rounded-[28px] z-50 transition-all duration-500",
+          "bg-blue-50/30 dark:bg-blue-950/28",
           previewDayId && "translate-y-[150%] opacity-0 pointer-events-none"
         )}
-        style={{ bottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+        style={{
+          bottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
+          backdropFilter: "blur(48px) saturate(2) brightness(1.08)",
+          WebkitBackdropFilter: "blur(48px) saturate(2) brightness(1.08)",
+          boxShadow: [
+            "0 12px 40px rgba(30,64,175,0.13)",
+            "0 3px 10px rgba(0,0,0,0.07)",
+            "inset 0 1.5px 0 rgba(255,255,255,0.72)",
+            "inset 0 -1px 0 rgba(255,255,255,0.14)",
+            "inset 1px 0 0 rgba(255,255,255,0.30)",
+            "inset -1px 0 0 rgba(255,255,255,0.30)",
+          ].join(", "),
+          border: "1px solid rgba(255,255,255,0.38)",
+        }}
       >
-        <div className="flex items-center h-[64px] px-3">
+        <div className="flex items-center h-[64px] px-2">
           {tabs.map((tab, i) => {
             const isActive = activeTab === i;
             const Icon = tab.icon;
@@ -71,20 +86,40 @@ export default function TrainingLayout() {
                 key={tab.path}
                 onClick={() => navigate(tab.path)}
                 className={cn(
-                  "flex-1 flex flex-col items-center justify-center gap-0.5 h-full rounded-2xl transition-all duration-300 min-h-[44px]",
+                  "flex-1 flex flex-col items-center justify-center gap-0.5 h-full transition-all duration-300 min-h-[44px] relative",
                   isActive
-                    ? "text-blue-800 dark:text-blue-200 scale-105"
-                    : "text-blue-950/50 dark:text-blue-200/40 hover:text-blue-900 dark:hover:text-blue-100",
+                    ? "text-blue-700 dark:text-blue-200"
+                    : "text-blue-950/38 dark:text-blue-200/35 hover:text-blue-900 dark:hover:text-blue-100",
                 )}
               >
+                {/* Active glass pill */}
+                {isActive && (
+                  <span
+                    className="absolute inset-x-1 inset-y-1.5 rounded-[18px] transition-all duration-300"
+                    style={{
+                      background: "rgba(59,130,246,0.11)",
+                      backdropFilter: "blur(8px) saturate(1.6)",
+                      WebkitBackdropFilter: "blur(8px) saturate(1.6)",
+                      boxShadow: [
+                        "inset 0 1px 0 rgba(255,255,255,0.55)",
+                        "inset 0 -1px 0 rgba(255,255,255,0.10)",
+                        "0 1px 6px rgba(59,130,246,0.10)",
+                      ].join(", "),
+                      border: "1px solid rgba(255,255,255,0.30)",
+                    }}
+                  />
+                )}
                 <Icon
                   size={20}
-                  className={cn("transition-all duration-300", isActive && "scale-110")}
+                  className={cn(
+                    "transition-all duration-300 relative z-10",
+                    isActive && "scale-110 drop-shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
+                  )}
                   strokeWidth={isActive ? 2.5 : 1.8}
                 />
                 <span
                   className={cn(
-                    "text-[10px] tracking-wide transition-all duration-300",
+                    "text-[10px] tracking-wide transition-all duration-300 relative z-10",
                     isActive ? "font-bold" : "font-semibold"
                   )}
                 >

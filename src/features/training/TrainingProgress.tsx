@@ -13,17 +13,12 @@ import {
   Trophy,
   Calendar,
   BarChart2,
+  TrendingUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-// ─── Mini sparkline using SVG ────────────────────────────────────────────────
-function Sparkline({
-  values,
-  color = "#0056b2",
-}: {
-  values: number[];
-  color?: string;
-}) {
+// ─── Mini sparkline ───────────────────────────────────────────────────────────
+function Sparkline({ values }: { values: number[] }) {
   if (values.length < 2) return null;
 
   const W = 100;
@@ -44,28 +39,18 @@ function Sparkline({
   const area = `${d} L${points[points.length - 1][0]},${H} L${points[0][0]},${H} Z`;
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      className="w-full h-9"
-    >
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-9">
       <defs>
-        <linearGradient
-          id={`sg-${color.replace("#", "")}`}
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="1"
-        >
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={area} fill={`url(#sg-${color.replace("#", "")})`} />
+      <path d={area} fill="url(#spark-fill)" />
       <path
         d={d}
         fill="none"
-        stroke={color}
+        stroke="#3b82f6"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -74,13 +59,13 @@ function Sparkline({
         cx={points[points.length - 1][0]}
         cy={points[points.length - 1][1]}
         r="2.5"
-        fill={color}
+        fill="#3b82f6"
       />
     </svg>
   );
 }
 
-// ─── Best RM from a group's logs ─────────────────────────────────────────────
+// ─── Best RM from a group's logs ──────────────────────────────────────────────
 function getBestRm(logs: ExerciseWeightLog[]) {
   const rms = logs
     .map((l) => l.calculated_rm)
@@ -111,13 +96,13 @@ function ExerciseCard({ group }: { group: ExerciseGroup }) {
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-      {/* Header row */}
+      {/* Header */}
       <button
         onClick={() => setExpanded((p) => !p)}
-        className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+        className="w-full flex items-center gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 active:scale-[0.99] transition-all"
       >
         <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-          <Dumbbell size={20} className="text-primary" />
+          <Dumbbell size={18} className="text-primary" strokeWidth={2} />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -125,13 +110,20 @@ function ExerciseCard({ group }: { group: ExerciseGroup }) {
             {group.exercise_name}
           </p>
           <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-            {group.logs.length}{" "}
-            {group.logs.length === 1 ? "registro" : "registros"}
+            {group.logs.length} {group.logs.length === 1 ? "registro" : "registros"}
           </p>
         </div>
 
+        {/* Best RM badge */}
+        {bestRm != null && (
+          <span className="shrink-0 text-[11px] font-bold text-primary bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-lg">
+            {bestRm.toFixed(0)} kg RM
+          </span>
+        )}
+
         <ChevronDown
-          size={20}
+          size={18}
+          strokeWidth={2}
           className={cn(
             "text-slate-300 dark:text-slate-600 transition-transform shrink-0",
             expanded && "rotate-180",
@@ -143,40 +135,43 @@ function ExerciseCard({ group }: { group: ExerciseGroup }) {
       {expanded && (
         <div className="flex flex-col border-t border-slate-100 dark:border-slate-800">
           {/* Stats row */}
-          <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+          <div className="grid grid-cols-2 gap-px bg-slate-100 dark:bg-slate-800">
             {[
               {
                 label: "Mejor RM",
                 value: bestRm != null ? `${bestRm.toFixed(0)} kg` : "—",
                 Icon: Trophy,
+                iconBg: "bg-amber-50 dark:bg-amber-900/20",
+                iconColor: "text-amber-500",
               },
               {
                 label: "Sesiones",
                 value: group.logs.length.toString(),
                 Icon: Calendar,
+                iconBg: "bg-blue-50 dark:bg-blue-900/30",
+                iconColor: "text-primary",
               },
             ].map((s) => (
               <div
                 key={s.label}
-                className="flex flex-col items-center py-3 gap-0.5"
+                className="flex flex-col items-center py-4 gap-1.5 bg-white dark:bg-slate-900"
               >
-                <s.Icon
-                  size={16}
-                  className="text-slate-400 dark:text-slate-500"
-                />
+                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center", s.iconBg)}>
+                  <s.Icon size={15} className={s.iconColor} strokeWidth={2} />
+                </div>
                 <p className="text-sm font-bold text-slate-900 dark:text-white">
                   {s.value}
                 </p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wide font-semibold">
                   {s.label}
                 </p>
               </div>
             ))}
           </div>
 
-          {/* Sparkline section */}
+          {/* Sparkline */}
           {sparkValues.length >= 2 && (
-            <div className="px-4 py-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="px-4 pt-4 pb-3 border-t border-slate-100 dark:border-slate-800">
               <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold mb-2">
                 Evolución del peso
               </p>
@@ -184,45 +179,40 @@ function ExerciseCard({ group }: { group: ExerciseGroup }) {
             </div>
           )}
 
-          {/* Session Timeline */}
+          {/* Session timeline */}
           <div className="border-t border-slate-100 dark:border-slate-800">
-            <div className="px-4 py-3 bg-slate-50/30 dark:bg-slate-800/20">
+            <div className="px-4 py-3">
               <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">
                 Historial de sesiones
               </p>
             </div>
-            <div className="divide-y divide-slate-50 dark:divide-slate-800/60 font-normal">
+            <div className="divide-y divide-slate-50 dark:divide-slate-800/60">
               {[...sortedLogs].reverse().map((log) => {
                 const rm = log.calculated_rm;
                 return (
-                  <div
-                    key={log.id}
-                    className="flex items-center gap-3 px-4 py-3"
-                  >
-                    <div className="w-10 text-center shrink-0">
-                      <span className="text-[11px] font-bold text-primary">
+                  <div key={log.id} className="flex items-center gap-3 px-4 py-3.5">
+                    <div className="w-11 shrink-0">
+                      <span className="text-[11px] font-bold text-primary leading-tight">
                         {formatDate(log.logged_at)}
                       </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap gap-1">
-                        {log.sets_detail.map((s, i) => (
-                          <span
-                            key={i}
-                            className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-px px-1.5 py-0.5"
-                          >
-                            {s.actual_reps ?? s.target_reps}r
-                            {s.kg != null && s.kg > 0 ? `·${s.kg}k` : ""}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="flex-1 min-w-0 flex flex-wrap gap-1">
+                      {log.sets_detail.map((s, i) => (
+                        <span
+                          key={i}
+                          className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded px-1.5 py-0.5 font-medium"
+                        >
+                          {s.actual_reps ?? s.target_reps}r
+                          {s.kg != null && s.kg > 0 ? ` · ${s.kg}k` : ""}
+                        </span>
+                      ))}
                     </div>
                     {rm != null && rm > 0 && (
                       <div className="shrink-0 text-right">
                         <p className="text-[11px] font-bold text-primary">
                           {rm.toFixed(0)} kg
                         </p>
-                        <p className="text-[9px] text-slate-400 uppercase font-semibold">
+                        <p className="text-[9px] text-slate-400 uppercase font-semibold tracking-wide">
                           RM
                         </p>
                       </div>
@@ -238,15 +228,85 @@ function ExerciseCard({ group }: { group: ExerciseGroup }) {
   );
 }
 
-// ─── Main page ─────────────────────────────────────────────────────────────────
+// ─── Section title ────────────────────────────────────────────────────────────
+function SectionTitle({
+  Icon,
+  title,
+  subtitle,
+}: {
+  Icon: LucideIcon;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-1">
+      <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+        <Icon size={18} strokeWidth={2} className="text-primary" />
+      </div>
+      <div>
+        <h2 className="text-base font-bold text-slate-900 dark:text-white leading-tight">
+          {title}
+        </h2>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+          {subtitle}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
 export default function TrainingProgress() {
   const { professor } = useAuthStore();
   const { groups, loading } = useExerciseWeightLogs(professor?.id);
 
+  const totalSessions = groups.reduce((acc, g) => acc + g.logs.length, 0);
+  const totalExercises = groups.length;
+
   return (
-    <div className="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-white pb-24 transition-colors duration-200">
-      <main className="flex flex-col gap-6 px-4 pt-4">
-        {/* Constancia Section */}
+    <div className="bg-background-light dark:bg-background-dark font-display text-text-main dark:text-white pb-28 transition-colors duration-200">
+      <div className="flex flex-col gap-6 px-4 pt-6">
+
+        {/* ── Summary strip ──────────────────────────────────────────── */}
+        {!loading && (totalSessions > 0 || totalExercises > 0) && (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                label: "Sesiones registradas",
+                value: totalSessions,
+                Icon: TrendingUp,
+                iconBg: "bg-blue-50 dark:bg-blue-900/30",
+                iconColor: "text-primary",
+              },
+              {
+                label: "Ejercicios trackeados",
+                value: totalExercises,
+                Icon: Dumbbell,
+                iconBg: "bg-blue-50 dark:bg-blue-900/30",
+                iconColor: "text-primary",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="flex items-center gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-4 shadow-sm"
+              >
+                <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", s.iconBg)}>
+                  <s.Icon size={18} strokeWidth={2} className={s.iconColor} />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-slate-900 dark:text-white leading-none">
+                    {s.value}
+                  </p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 leading-tight">
+                    {s.label}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── Constancia ─────────────────────────────────────────────── */}
         <section className="flex flex-col gap-4">
           <SectionTitle
             Icon={Calendar}
@@ -256,7 +316,7 @@ export default function TrainingProgress() {
           {professor?.id && <WorkoutCalendar studentId={professor.id} />}
         </section>
 
-        {/* Progreso Section */}
+        {/* ── Progreso de Pesos ───────────────────────────────────────── */}
         <section className="flex flex-col gap-4">
           <SectionTitle
             Icon={Dumbbell}
@@ -276,13 +336,13 @@ export default function TrainingProgress() {
           ) : groups.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 py-10 px-6 text-center shadow-sm">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                <BarChart2 size={28} className="text-primary" />
+                <BarChart2 size={28} strokeWidth={1.8} className="text-primary" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">
                   Sin registros aún
                 </p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 leading-relaxed">
                   Completá entrenamientos para ver tu progreso aquí.
                 </p>
               </div>
@@ -295,32 +355,7 @@ export default function TrainingProgress() {
             </div>
           )}
         </section>
-      </main>
-    </div>
-  );
-}
 
-
-
-function SectionTitle({
-  Icon,
-  title,
-  subtitle,
-}: {
-  Icon: LucideIcon;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="flex items-center gap-2 px-1">
-      <Icon size={20} strokeWidth={1.5} className="text-primary" />
-      <div>
-        <h2 className="text-base font-bold text-slate-900 dark:text-white">
-          {title}
-        </h2>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-          {subtitle}
-        </p>
       </div>
     </div>
   );

@@ -254,12 +254,6 @@ export default function TrainingHome() {
     completedDayNumbers.has(currentDisplayDayNumber ?? -1);
 
   const firstName = professor?.firstName ?? "Atleta";
-  const today = new Date();
-  const dateLabel = today.toLocaleDateString("es-ES", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
 
   const handleStart = () => {
     if (!assignment || !workoutDay) return;
@@ -286,13 +280,15 @@ export default function TrainingHome() {
     <>
     <div className="px-4 pt-[calc(env(safe-area-inset-top,0px)+1.5rem)] pb-4 space-y-5 max-w-lg mx-auto">
       {/* ── Header greeting ─────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 capitalize font-medium">
-            {dateLabel}
-          </p>
-          <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Hola {firstName} 💪
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2.5">
+          <img
+            src="/tuerca-nueva-confondo.svg"
+            alt="Stability"
+            className="h-6 w-auto shrink-0"
+          />
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Hola, {firstName}
           </h1>
         </div>
 
@@ -546,28 +542,6 @@ export default function TrainingHome() {
         </div>
       )}
 
-      {/* Metrics row */}
-      <div className="grid grid-cols-1 gap-3">
-        <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 dark:bg-blue-900/30">
-            <Dumbbell size={20} className="text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-xl font-bold text-slate-900 dark:text-white">
-                {completedThisMonth}
-              </span>
-              <span className="text-xs text-slate-400 dark:text-slate-500">
-                este mes
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
-              Sesiones completadas
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* ── Weekly progress strip ─────────────────────────────────── */}
       <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
         <div className="flex items-center justify-between mb-3">
@@ -607,6 +581,28 @@ export default function TrainingHome() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Metrics row */}
+      <div className="grid grid-cols-1 gap-3">
+        <div className="flex items-center gap-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-4 shadow-sm">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 dark:bg-blue-900/30">
+            <Dumbbell size={20} className="text-blue-600 dark:text-blue-400" />
+          </div>
+          <div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-xl font-bold text-slate-900 dark:text-white">
+                {completedThisMonth}
+              </span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                este mes
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
+              Sesiones completadas
+            </p>
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Trophy, PlayCircle, Gift, ChevronRight } from "lucide-react";
+import { Users, Trophy, Dumbbell, Gift, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { useDataCacheStore } from "@/store/dataCacheStore";
@@ -15,7 +15,7 @@ const sections: {
   color: string;
 }[] = [
   {
-    title: "¿Quiénes somos?",
+    title: "Nosotros",
     description: "Conoce más sobre nuestra plataforma y equipo",
     icon: Users,
     path: "/entrenamiento/comunidad/quienes-somos",
@@ -29,9 +29,9 @@ const sections: {
     color: "text-blue-500",
   },
   {
-    title: "Biblioteca de Videos",
-    description: "Accede a nuestra colección de videos de entrenamiento",
-    icon: PlayCircle,
+    title: "Lo que viene",
+    description: "Nuestro propio gimnasio está en camino. Enterate de los planes y novedades.",
+    icon: Dumbbell,
     path: "/entrenamiento/comunidad/videos",
     color: "text-blue-500",
   },
