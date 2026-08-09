@@ -600,6 +600,7 @@ export default function ExerciseDetail() {
             </div>
           </div>
         </div>
+        <CoachContactButton />
       </div>
     );
   }
