@@ -4,6 +4,7 @@ import { useTrainingStore } from "@/features/training/store/trainingStore";
 import { useActiveDayExercises } from "@/hooks/useActiveDayExercises";
 import { Pencil, X, CheckCircle2, ArrowLeft, Dumbbell, Save, PlayCircle, BellOff } from "lucide-react";
 import { QuickSaveModal } from "@/features/training/QuickSaveModal";
+import CoachContactButton from "@/features/training/CoachContactButton";
 import type { Exercise } from "@/features/training/types";
 import { cn } from "@/lib/utils";
 
@@ -500,6 +501,8 @@ export default function ExerciseList() {
           }}
         />
       )}
+
+      <CoachContactButton />
     </div>
   );
 }

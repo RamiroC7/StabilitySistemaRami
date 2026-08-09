@@ -1,4 +1,5 @@
 import { useEffect, useState, Fragment } from "react";
+import CoachContactButton from "@/features/training/CoachContactButton";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTrainingStore } from "@/features/training/store/trainingStore";
 import type { Exercise } from "@/features/training/types";
@@ -912,6 +913,7 @@ export default function ExerciseDetail() {
           </div>
         </div>
       </div>
+      <CoachContactButton />
     </div>
   );
 }

@@ -117,13 +117,12 @@ export function useActiveDayExercises(
               category: ex.stage_name ?? "",
               sets,
               restSeconds: parsePauseToSeconds(ex.pause),
-              // Prefer the live video_url from the library (matched by name).
-              // Falls back to the URL stored in the plan if the exercise is not
-              // found in the library (e.g. it was renamed or deleted).
+              // Prefer the URL saved in the plan (what the coach explicitly set).
+              // Falls back to the library URL only if the plan exercise has none.
               videoUrl: (
-                libraryVideoMap.has(ex.exercise_name.toLowerCase())
-                  ? libraryVideoMap.get(ex.exercise_name.toLowerCase())
-                  : ex.video_url
+                ex.video_url
+                  ? ex.video_url
+                  : libraryVideoMap.get(ex.exercise_name.toLowerCase())
               ) ?? undefined,
               instructions: instructionParts.join(" — ") || undefined,
               writeWeight: ex.write_weight ?? false,
