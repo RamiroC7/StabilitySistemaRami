@@ -262,8 +262,8 @@ export default function StudentsList() {
               </div>
             </div>
           ) : (
-            /* Students Grid - 2 Columns */
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            /* Students Grid - 4 Columns */
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
               {visibleStudents.map((student) => {
                 const isArchived = student.isArchived;
                 const attendance = attendanceAlerts.get(student.id);
