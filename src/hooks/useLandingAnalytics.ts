@@ -240,39 +240,32 @@ const DEMO_DATA_MAP: Record<TimeRange, LandingAnalyticsData> = {
 };
 
 // --- PostHog Live Query Helper ---
+// Las queries van al proxy server-side (/api/posthog-query) para evitar que
+// el SDK de PostHog en el browser intercepte y corrompa las llamadas a la API.
 const POSTHOG_PROJECT_ID = import.meta.env.VITE_POSTHOG_PROJECT_ID || "554935";
 const POSTHOG_PERSONAL_API_KEY = import.meta.env.VITE_POSTHOG_PERSONAL_API_KEY || "";
-const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST || "https://us.posthog.com";
 
 async function queryPostHogHogQL(query: string): Promise<unknown[][]> {
-  const url = `${POSTHOG_HOST}/api/projects/${POSTHOG_PROJECT_ID}/query/`;
-  console.log("[PostHog] Querying:", url);
-  console.log("[PostHog] API Key present:", !!POSTHOG_PERSONAL_API_KEY, "| Project ID:", POSTHOG_PROJECT_ID);
-  const response = await fetch(url, {
+  const response = await fetch("/api/posthog-query", {
     method: "POST",
-    mode: "cors",
-    headers: {
-      "Authorization": `Bearer ${POSTHOG_PERSONAL_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ query: { kind: "HogQLQuery", query } }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
   });
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[PostHog] Error response:", response.status, errorText);
-    throw new Error(`PostHog query failed with status ${response.status}: ${errorText}`);
+    console.error("[PostHog Proxy] Error:", response.status, errorText);
+    throw new Error(`PostHog proxy failed: ${response.status}`);
   }
   const data = await response.json();
-  console.log("[PostHog] Query OK, rows:", data.results?.length ?? 0);
   return data.results || [];
 }
 
 async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyticsData | null> {
-  console.log("[PostHog] fetchRealPostHogMetrics called. PROJECT_ID:", POSTHOG_PROJECT_ID, "| API_KEY:", POSTHOG_PERSONAL_API_KEY ? "SET" : "EMPTY");
   if (!POSTHOG_PROJECT_ID || !POSTHOG_PERSONAL_API_KEY) {
-    console.warn("[PostHog] Missing credentials → falling back to DEMO");
+    console.warn("[PostHog] Missing credentials → usando DEMO");
     return null;
   }
+
 
   try {
     let dateFilter = "timestamp >= now() - INTERVAL 7 DAY";
