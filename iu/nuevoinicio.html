@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stability Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#0056b3",
+                        secondary: "#1a202c",
+                        "background-light": "#F3F6F8",
+                        "background-dark": "#0F172A",
+                        "card-light": "#FFFFFF",
+                        "card-dark": "#1E293B",
+                        "input-light": "#FFFFFF",
+                        "input-dark": "#334155",
+                        "border-light": "#E2E8F0",
+                        "border-dark": "#475569",
+                        "text-light": "#1e293b",
+                        "text-dark": "#f8fafc",
+                        "muted-light": "#64748b",
+                        "muted-dark": "#94a3b8",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                        sans: ["Inter", "sans-serif"],
+                        serif: ["Playfair Display", "serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.5);
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex overflow-hidden bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark transition-colors duration-300">
+<div class="hidden lg:flex w-1/2 relative bg-primary items-center justify-center overflow-hidden">
+<div class="absolute inset-0 z-0">
+<img alt="Gym weights background" class="w-full h-full object-cover opacity-40 mix-blend-multiply" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCInrZDpmQgQD_lEDYX12gML5JldSHxVLiCV9gYhWlVWdJUOq1CDCJoxVJptMj5MR8Btgnc3T1MPzNq2VLQfpQXZlwQ6-LgsfF40KxiGezmniir2kvBFPg7o2N7_3GEhT0TN0qf8ZZBCcsEfZzb57DQew68Yuqi4yAX2x4Rcphemkm4irvU-k2J7_aB7Be-4NvD-XOyW8H8PDB-9k_UwTKcjFMNoNTAqXA78heOVzQqrY3fOqZdfLW9XL53tafKbdRhl9x4tmpnFps"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/60 to-primary/40"></div>
+</div>
+<div class="relative z-10 flex flex-col items-center justify-center text-white">
+<div class="relative">
+<h1 class="font-serif text-7xl tracking-widest font-bold relative z-10">
+                STABILIT<span class="relative inline-block">Y
+                    <span class="absolute -top-6 left-1/2 -translate-x-1/2 text-2xl text-white/90">
+<i class="fa-solid fa-gear fa-spin-pulse" style="--fa-animation-duration: 3s;"></i>
+</span>
+</span>
+</h1>
+</div>
+<div class="w-full h-px bg-white/50 my-4 max-w-[80%]"></div>
+<p class="text-sm uppercase tracking-[0.3em] font-light">Entrenamiento y salud</p>
+</div>
+</div>
+<div class="w-full lg:w-1/2 flex flex-col justify-center items-center p-6 lg:p-12 overflow-y-auto relative">
+<div class="w-full max-w-md">
+<div class="lg:hidden flex justify-center mb-8">
+<div class="bg-primary text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+<span class="font-bold text-xl tracking-wide">STABILITY</span>
+<span class="material-icons text-sm">settings</span>
+</div>
+</div>
+<div class="text-center mb-8">
+<h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Bienvenido de nuevo</h2>
+<p class="text-muted-light dark:text-muted-dark text-sm">Gestiona tu entrenamiento profesional</p>
+</div>
+<div class="bg-card-light dark:bg-card-dark rounded-xl shadow-xl dark:shadow-none dark:border dark:border-border-dark p-6 sm:p-8">
+<div class="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-6">
+<button class="flex-1 py-2 text-sm font-medium rounded-md bg-white dark:bg-primary text-primary dark:text-white shadow-sm transition-all text-center">
+                    Soy Alumno
+                </button>
+<button class="flex-1 py-2 text-sm font-medium rounded-md text-muted-light dark:text-muted-dark hover:text-gray-900 dark:hover:text-white transition-all text-center">
+                    Soy Coach
+                </button>
+</div>
+<form action="#" class="space-y-5" method="POST">
+<div>
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="email">Correo Electrónico</label>
+<div class="relative rounded-md shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons text-gray-400 text-lg">mail</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-2.5 border-border-light dark:border-border-dark rounded-md bg-input-light dark:bg-input-dark text-text-light dark:text-text-dark placeholder-gray-400 focus:ring-primary focus:border-primary sm:text-sm transition-colors" id="email" name="email" placeholder="ejemplo@correo.com" type="email"/>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-center mb-1">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="password">Contraseña</label>
+</div>
+<div class="relative rounded-md shadow-sm">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-icons text-gray-400 text-lg">lock</span>
+</div>
+<input class="block w-full pl-10 pr-10 py-2.5 border-border-light dark:border-border-dark rounded-md bg-input-light dark:bg-input-dark text-text-light dark:text-text-dark placeholder-gray-400 focus:ring-primary focus:border-primary sm:text-sm transition-colors" id="password" name="password" placeholder="••••••••" type="password"/>
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer">
+<span class="material-icons text-gray-400 text-lg hover:text-gray-600 dark:hover:text-gray-200">visibility</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center">
+<input class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600" id="remember-me" name="remember-me" type="checkbox"/>
+<label class="ml-2 block text-sm text-gray-600 dark:text-gray-400" for="remember-me">
+                            Recordarme
+                        </label>
+</div>
+<div class="text-sm">
+<a class="font-medium text-primary hover:text-blue-700 dark:hover:text-blue-400" href="#">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+</div>
+</div>
+<div>
+<button class="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors" type="submit">
+                        Iniciar Sesión
+                        <span class="material-icons ml-2 text-sm">arrow_forward</span>
+</button>
+</div>
+</form>
+<div class="relative mt-8 mb-6">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
+</div>
+<div class="relative flex justify-center text-sm">
+<span class="px-2 bg-card-light dark:bg-card-dark text-muted-light dark:text-muted-dark">o continúa con</span>
+</div>
+</div>
+<div>
+<button class="w-full flex justify-center items-center px-4 py-2.5 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-transparent text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" type="button">
+<img alt="Google Logo" class="h-5 w-5 mr-2" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVvU4IQ8MW1mrDS5yFtg4NXC_BE_leuqKZm6OuiMMS7_uDgRw_RpazI6xTjNTrsaUkfwqFvPNfT-Oyfqab7IUh0A9pRvEqUOKxfMjEzrxgNmlEg_fEo3h_eUZxm1dY85UQGyRYUajePw8MzXqXCvxKg3CNDGuv4S4Lr-Lg6csH7yEIglNsq02p07B8AH8OU3jT4EY-Xi80gvVe8fRphn-frlVC5kNuXRPlYGS9cKyqqoZa0M4ML2qABesY-ow2EjlGdiYh0NMhyLg"/>
+                    Continuar con Google
+                </button>
+</div>
+</div>
+<p class="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
+            ¿No tienes cuenta?
+            <a class="font-medium text-primary hover:text-blue-700 dark:hover:text-blue-400" href="#">
+                Regístrate aquí
+            </a>
+</p>
+</div>
+</div>
+
+</body></html>

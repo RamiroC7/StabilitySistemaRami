@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Base de Ejercicios - Desktop</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0056b3", // Royal Blue as requested
+                        "primary-hover": "#004494",
+                        "background-light": "#f8f9fa",
+                        "background-dark": "#0f1923",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a242d",
+                        "slate-850": "#1e293b",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    boxShadow: {
+                        'soft': '0 2px 10px rgba(0, 0, 0, 0.03)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased overflow-hidden h-screen w-full flex">
+<aside class="w-64 bg-surface-light dark:bg-surface-dark border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-20">
+<div class="h-16 flex items-center px-6 border-b border-slate-100 dark:border-slate-800/50">
+<div class="flex items-center gap-2 text-primary dark:text-blue-400">
+<span class="material-symbols-outlined text-[28px] fill-current">fitness_center</span>
+<span class="font-bold text-lg tracking-tight text-slate-900 dark:text-white">Stability</span>
+</div>
+</div>
+<nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">home</span>
+<span class="font-medium text-sm">Inicio</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">dashboard</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-50 text-primary dark:bg-blue-900/20 dark:text-blue-400 transition-colors" href="#">
+<span class="material-symbols-outlined text-[22px] fill-current">library_books</span>
+<span class="font-medium text-sm">Biblioteca</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[22px] group-hover:scale-110 transition-transform">calendar_month</span>
+<span class="font-medium text-sm">Planificador</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<button class="flex items-center gap-3 w-full px-2 py-2 text-left rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group">
+<div class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-[13px] font-bold text-slate-900 dark:text-white truncate">Coach Admin</p>
+<p class="text-[11px] text-slate-400 dark:text-slate-500 truncate font-normal">admin@stability.com</p>
+</div>
+</button>
+</div>
+</aside>
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background-light dark:bg-background-dark relative">
+<header class="bg-surface-light dark:bg-surface-dark border-b border-slate-200 dark:border-slate-800 shrink-0">
+<div class="px-8 pt-8 pb-0">
+<div class="flex justify-between items-start mb-6">
+<div>
+<h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Biblioteca</h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1 text-sm">Gestiona tus rutinas y base de datos de ejercicios.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors rounded-full hover:bg-blue-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors rounded-full hover:bg-blue-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+<div class="flex gap-8">
+<button class="pb-4 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 border-b-2 border-transparent transition-all">
+                        Planes y Rutinas
+                    </button>
+<button class="pb-4 text-sm font-bold text-primary dark:text-blue-400 border-b-2 border-primary dark:border-blue-400 transition-all">
+                        Base de Ejercicios
+                    </button>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-7xl mx-auto space-y-6">
+<div class="flex flex-col lg:flex-row gap-4 items-center justify-between bg-surface-light dark:bg-surface-dark p-4 rounded-xl shadow-soft border border-slate-200/60 dark:border-slate-800">
+<div class="flex flex-1 w-full lg:w-auto gap-4 items-center">
+<div class="relative w-full lg:max-w-md group">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-900 dark:text-white placeholder:text-slate-400 transition-all" placeholder="Buscar por nombre..." type="text"/>
+</div>
+<div class="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden lg:block"></div>
+<div class="hidden lg:flex gap-2 overflow-x-auto hide-scrollbar">
+<button class="whitespace-nowrap px-4 py-2 bg-primary text-white text-xs font-medium rounded-full shadow-sm hover:shadow-md hover:bg-primary-hover transition-all">Todos</button>
+<button class="whitespace-nowrap px-4 py-2 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 text-xs font-medium rounded-full transition-colors">Piernas</button>
+<button class="whitespace-nowrap px-4 py-2 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 text-xs font-medium rounded-full transition-colors">Pectorales</button>
+<button class="whitespace-nowrap px-4 py-2 bg-white border border-slate-200 dark:bg-slate-800 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600 text-xs font-medium rounded-full transition-colors">Espalda</button>
+</div>
+<div class="lg:hidden">
+<button class="flex items-center justify-center p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</button>
+</div>
+</div>
+<button class="w-full lg:w-auto whitespace-nowrap bg-primary hover:bg-primary-hover text-white text-sm font-semibold py-2.5 px-6 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Nuevo Ejercicio</span>
+</button>
+</div>
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-soft border border-slate-200/60 dark:border-slate-800 overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50/50 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+<th class="px-6 py-4 w-32">Video</th>
+<th class="px-6 py-4 w-1/4">Ejercicio</th>
+<th class="px-6 py-4">Observaciones Técnicas</th>
+<th class="px-6 py-4 w-24 text-right">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="relative w-20 h-14 rounded-lg overflow-hidden bg-slate-200 shadow-sm group-hover:shadow-md transition-shadow cursor-pointer">
+<img alt="Woman doing bulgarian split squats in gym" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAu-GRFzCWqmCBBtxeS6QqJKXTlTivcF4kXJJ05MsCNn2bAvtPtzPui11eBly-jkSeVqG4M9OlsG7hm5J2PIkuI1bnaE6p2FIlgfOKfgnyXypx54cBlOrX41YWqIwMD2T5GtWkgnJ0w17z2W4XavwqPOAYINAmbtBLCKg1DtuKiHx-tY0npyHM5dOlCNzeFBR4qhTHfomPX54YpDCI3b6U4iOk1t6FWRTwQsIuzHHIYLt_xdME6eD1xmhZGsFeuQ3YypNB9KtuVjCzI"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-colors">
+<span class="material-symbols-outlined text-white text-[24px]">play_circle</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-1.5">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Sentadilla Búlgara</span>
+<span class="inline-flex w-fit items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50">
+                                            Piernas
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                                        Bajar controlado hasta 90 grados, mantener el torso inclinado levemente hacia adelante. Asegurar estabilidad en el pie de apoyo.
+                                    </p>
+</td>
+<td class="px-6 py-4 text-right align-middle">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-primary hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Eliminar">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="relative w-20 h-14 rounded-lg overflow-hidden bg-slate-200 shadow-sm group-hover:shadow-md transition-shadow cursor-pointer">
+<img alt="Man doing bench press with barbell" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD19VUu5w37OkfQhHyGrU1o-FtnEK5Hr7ux8ImwQObgKhpoqSflMOY0oHQAcg3DX2CSYhr2z9N7Q5cL73GTtq5DU-q9db3SnlQZAOhyxKC18Uw_6OtBAUj9HxUKhHicxJyqYmUyVY9ooCOfgjXC10gFrkv0DAwHM0KN3pD0EeIw1ceHwl8pYyoU89bO4HkGqoqjV-NyI9293syKJkZOB_dx5wgWfKS1HrK7QBYmc1M1121pu4z_i5LkL4nSQLoMjZwQUs6YUJ2OhVAu"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-colors">
+<span class="material-symbols-outlined text-white text-[24px]">play_circle</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-1.5">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Press de Banca</span>
+<span class="inline-flex w-fit items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-100 dark:border-orange-900/50">
+                                            Pectorales
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                                        Mantener los codos a 45 grados respecto al cuerpo, retracción escapular activa para proteger los hombros.
+                                    </p>
+</td>
+<td class="px-6 py-4 text-right align-middle">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-primary hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Eliminar">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="relative w-20 h-14 rounded-lg overflow-hidden bg-slate-200 shadow-sm group-hover:shadow-md transition-shadow cursor-pointer">
+<img alt="Person doing pull ups in gym" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUiEawveq5BJfN5QWIm4-IQBl2EEqyrsohfT8ba0gBhNB2BTJ-kM-w_gsSABozbHt8BjhFtOkTpsJnCemDz-umjwfAuw_ny7FyQMVcHMA7dHIE5e7WA5RlQJ0lnhQ7_0vSuL3qsefmKw1o0dSxobSdn05Tvm1RPcocDSOasU1CNOJHUyHO6Fm3sNE7d3PzW7mFGROf7ctyhZV_mbT1hp5-sWuPS6gJk7Yqrxy80QUDVSOxePC_kMJACiWgnDHHMvEz8NDI3khptDT1"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-colors">
+<span class="material-symbols-outlined text-white text-[24px]">play_circle</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-1.5">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Dominadas</span>
+<span class="inline-flex w-fit items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-100 dark:border-purple-900/50">
+                                            Espalda
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                                        Extensión completa de brazos al bajar, subir hasta pasar la barbilla. Evitar balanceo excesivo.
+                                    </p>
+</td>
+<td class="px-6 py-4 text-right align-middle">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-primary hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Eliminar">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="relative w-20 h-14 rounded-lg overflow-hidden bg-slate-200 shadow-sm group-hover:shadow-md transition-shadow cursor-pointer">
+<img alt="Man lifting barbell for deadlift" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKgC82NI-kcN__Ts15N-C8K1Gws3AeVqyufz6Nv1o-YvGGKiyqqaCMs8KquL1DDnRNY1Qm_Gz7mHnxdXTFvN1lv_Tx-mz2bp9JbtNhckxIokQwft-XyzeLXct9aBP36zIdJ9VA3HhF36WiXjRDzfVJh84nLSum8bvQVImXafngYzMnzgN-VKDZUTA7JiIJYy2tIs7uakOiic9TO_fwJTC0ilzKUBkf3ZJcTmbgf5M8e_MntxRD83hNHqQ4fS1WtipGmnozAX-Qe7aI"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-colors">
+<span class="material-symbols-outlined text-white text-[24px]">play_circle</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-1.5">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Peso Muerto</span>
+<span class="inline-flex w-fit items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-900/50">
+                                            Piernas / Espalda
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                                        Espalda neutra en todo momento, empujar el suelo con los talones, mantener la barra pegada a las tibias.
+                                    </p>
+</td>
+<td class="px-6 py-4 text-right align-middle">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-primary hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Eliminar">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4">
+<div class="relative w-20 h-14 rounded-lg overflow-hidden bg-slate-200 shadow-sm group-hover:shadow-md transition-shadow cursor-pointer">
+<img alt="Man doing shoulder press with dumbbells" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFsVi8WBRYAnEID2i2k7NkzAm2OOOmZ5-JpT9yGkopeKtzNYVAbmGCUvxfKw6PLQ12bLKXYB-SAoHc7pmiz993JNctQbWaFLQKwiVH9zHIYyoi95kmjGtdv1ycdERAdM0hVpmhlq4nrrMlg_1CstIPTURsztlxL2wSh-bckEId3_mICTAjncfHjsv-YF2tEuYzZ4TKbNg9knAFIqLU0yhd-0X5wiAlnhxx0cJDuSuc6Et5UlDRW8aaywIT5eEicK6fGFvNxGK5vNSK"/>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-colors">
+<span class="material-symbols-outlined text-white text-[24px]">play_circle</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<div class="flex flex-col gap-1.5">
+<span class="font-bold text-slate-900 dark:text-white text-sm">Press Militar</span>
+<span class="inline-flex w-fit items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-100 dark:border-red-900/50">
+                                            Hombros
+                                        </span>
+</div>
+</td>
+<td class="px-6 py-4 align-top">
+<p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-2xl">
+                                        No arquear la espalda baja, empujar verticalmente sobre la cabeza. Apretar glúteos para estabilidad.
+                                    </p>
+</td>
+<td class="px-6 py-4 text-right align-middle">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-2 text-primary hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Eliminar">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pb-8">
+<span>Mostrando 1-5 de 24 ejercicios</span>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50">Anterior</button>
+<button class="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700">Siguiente</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

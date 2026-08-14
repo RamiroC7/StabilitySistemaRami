@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Planificador con Etapas Dinámicas</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0056b3","primary-light": "#3395ff","background-light": "#f5f7f8",
+                        "background-dark": "#0f1923",
+                        "border-light": "#e5e7eb",
+                        "border-dark": "#2d3748",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased text-[#101418] dark:text-white h-screen overflow-hidden">
+<div class="flex h-full w-full">
+<aside class="w-64 bg-white dark:bg-[#1a202c] border-r border-gray-200 dark:border-gray-700 flex flex-col z-30 flex-shrink-0">
+<div class="h-16 flex items-center px-6 border-b border-gray-100 dark:border-gray-800">
+<span class="text-xl font-bold tracking-tight text-primary">Stability</span>
+</div>
+<nav class="flex-1 px-3 py-6 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">home</span>
+<span class="font-medium text-sm">Inicio</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">bar_chart</span>
+<span class="font-medium text-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">fitness_center</span>
+<span class="font-medium text-sm">Biblioteca</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-sky-50 text-primary font-bold" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-sm">Planificador</span>
+</a>
+</nav>
+<div class="p-4 border-t border-gray-200 dark:border-gray-800">
+<button class="flex items-center gap-3 px-3 py-2 w-full rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+<div class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">person</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="text-sm font-bold text-gray-900 dark:text-white">Coach Admin</span>
+<span class="text-xs text-gray-400">admin@stability.com</span>
+</div>
+</button>
+</div>
+</aside>
+<div class="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+<header class="bg-white dark:bg-[#1a202c] border-b border-gray-200 dark:border-gray-700 flex-shrink-0 z-20">
+<div class="px-8 pt-5 pb-1">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2 text-xs font-medium text-gray-400">
+<span class="hover:text-primary cursor-pointer">Planificador</span>
+<span class="material-symbols-outlined text-[10px]">chevron_right</span>
+<span class="text-gray-600 dark:text-gray-300">Nuevo Plan</span>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-lg h-9 px-4 bg-sky-100 hover:bg-sky-200 text-primary-light text-primary font-bold transition-colors text-sm">
+<span class="material-symbols-outlined text-lg mr-2">content_copy</span>
+                                Duplicar Semana
+                            </button>
+<button class="flex items-center justify-center rounded-lg h-9 px-5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-bold transition-colors text-sm shadow-sm">
+<span class="material-symbols-outlined text-lg mr-2">save</span>
+                                Guardar en Biblioteca
+                            </button>
+<button class="flex items-center justify-center rounded-lg h-9 px-5 bg-[#0056b3] text-white text-sm font-bold shadow-sm hover:bg-[#004494] transition-colors">
+<span class="material-symbols-outlined text-lg mr-2">person_add</span>
+                                Asignar plan a alumno
+                            </button>
+</div>
+</div>
+<div class="flex items-center gap-2 mb-4">
+<input class="w-full max-w-2xl bg-transparent text-2xl font-bold leading-tight border-none p-0 focus:ring-0 text-[#101418] dark:text-white placeholder-gray-400 hover:bg-gray-50 rounded px-1 -ml-1 transition-colors" type="text" value="Nuevo Plan: Hipertrofia Fase 1"/>
+<span class="material-symbols-outlined text-gray-400 text-xl">edit</span>
+</div>
+</div>
+<div class="px-8 flex flex-col gap-4 pb-0">
+<div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-4">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1.5 shadow-sm">
+<label class="text-[10px] uppercase font-bold text-[#5e758d] tracking-wider mr-1">Desde</label>
+<span class="material-symbols-outlined text-[#5e758d] text-base">calendar_today</span>
+<span class="text-sm font-medium">12 Oct, 2023</span>
+</div>
+<span class="text-gray-300 material-symbols-outlined text-sm">arrow_forward</span>
+<div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-3 py-1.5 shadow-sm">
+<label class="text-[10px] uppercase font-bold text-[#5e758d] tracking-wider mr-1">Hasta</label>
+<span class="material-symbols-outlined text-[#5e758d] text-base">event</span>
+<span class="text-sm font-medium">19 Oct, 2023</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-6 text-sm text-[#5e758d] bg-gray-50 dark:bg-gray-800 px-4 py-1.5 rounded-full">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">fitness_center</span>
+<span class="font-medium">Total Series: <b class="text-[#101418] dark:text-white">13</b></span>
+</div>
+</div>
+</div>
+<div class="flex items-end gap-1 mt-2">
+<button class="px-6 py-2.5 bg-white dark:bg-[#1a202c] border-b-2 border-primary text-primary font-bold text-sm hover:bg-gray-50 transition-colors">
+                            Día 1
+                        </button>
+<button class="px-6 py-2.5 border-b-2 border-transparent text-[#5e758d] hover:text-gray-800 dark:hover:text-gray-200 font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            Día 2
+                        </button>
+<button class="px-6 py-2.5 border-b-2 border-transparent text-[#5e758d] hover:text-gray-800 dark:hover:text-gray-200 font-medium text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            Día 3
+                        </button>
+<button class="ml-2 flex items-center gap-1 px-3 py-2 text-[#5e758d] hover:text-primary font-bold text-xs uppercase tracking-wide transition-colors">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+                            Agregar Día
+                        </button>
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-6">
+<div class="bg-white dark:bg-[#1a202c] shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden min-w-[900px]">
+<div class="grid grid-cols-[140px_40px_3fr_80px_80px_100px_80px_2fr_50px] gap-0 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-[11px] font-bold text-[#5e758d] uppercase tracking-wider items-center sticky top-0 z-10">
+<div class="py-3 text-center border-r border-gray-200 dark:border-gray-700">Etapa</div>
+<div class="py-3 text-center">#</div>
+<div class="py-3 px-3 border-l border-gray-100 dark:border-gray-800">Ejercicio</div>
+<div class="py-3 text-center border-l border-gray-100 dark:border-gray-800">Series</div>
+<div class="py-3 text-center border-l border-gray-100 dark:border-gray-800">Reps</div>
+<div class="py-3 text-center border-l border-gray-100 dark:border-gray-800">Intensidad</div>
+<div class="py-3 text-center border-l border-gray-100 dark:border-gray-800">Pausa</div>
+<div class="py-3 px-3 border-l border-gray-100 dark:border-gray-800">Notas</div>
+<div class="py-3 text-center border-l border-gray-100 dark:border-gray-800"></div>
+</div>
+<div class="group relative border-b border-gray-200 dark:border-gray-700">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-300 z-10"></div>
+<div class="grid grid-cols-[140px_40px_3fr_80px_80px_100px_80px_2fr_50px] items-stretch hover:bg-blue-50/30 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+<div class="px-2 py-2 flex items-center justify-center border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+<div class="relative w-full">
+<select class="w-full text-[10px] font-bold uppercase tracking-wide text-primary bg-white border border-blue-200 dark:border-blue-900 rounded py-1.5 pl-2 pr-6 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer appearance-none shadow-sm">
+<option selected="">Activación</option>
+<option>Desarrollo</option>
+<option>Vuelta a la Calma</option>
+</select>
+<span class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-primary text-sm pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-center h-12 text-gray-300 cursor-grab active:cursor-grabbing hover:text-primary">
+<span class="material-symbols-outlined text-lg">drag_indicator</span>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full text-sm font-semibold text-[#101418] dark:text-white bg-transparent border-none p-0 focus:ring-0 placeholder-gray-400" type="text" value="Plancha Lateral + Remo"/>
+<span class="absolute right-0 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-sm pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="number" value="3"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="30s"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 pr-4" type="number" value="6"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold pointer-events-none">RPE</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="20s"/>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full text-xs text-[#5e758d] bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="Notas..." type="text" value="Flexibilidad estática y dinámica"/>
+</div>
+<div class="h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 group/row">
+<button class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover/row:opacity-100">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-[140px_40px_3fr_80px_80px_100px_80px_2fr_50px] items-stretch hover:bg-blue-50/30 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+<div class="px-2 py-2 flex items-center justify-center border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+<div class="relative w-full">
+<select class="w-full text-[10px] font-bold uppercase tracking-wide text-primary bg-white border border-blue-200 dark:border-blue-900 rounded py-1.5 pl-2 pr-6 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer appearance-none shadow-sm">
+<option selected="">Activación</option>
+<option>Desarrollo</option>
+<option>Vuelta a la Calma</option>
+</select>
+<span class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-primary text-sm pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-center h-12 text-gray-300 cursor-grab active:cursor-grabbing hover:text-primary">
+<span class="material-symbols-outlined text-lg">drag_indicator</span>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full text-sm font-semibold text-[#101418] dark:text-white bg-transparent border-none p-0 focus:ring-0 placeholder-gray-400" type="text" value="Halo con Kettlebell"/>
+<span class="absolute right-0 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-sm pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="number" value="3"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="15"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 pr-4" type="number" value="7"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold pointer-events-none">RPE</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="20s"/>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full text-xs text-[#5e758d] bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="Notas..." type="text" value="Carga propia"/>
+</div>
+<div class="h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 group/row">
+<button class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover/row:opacity-100">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="w-full p-2 bg-gray-50/50 dark:bg-gray-800/20 border-t border-gray-100 dark:border-gray-800">
+<button class="w-full flex items-center justify-center gap-1.5 py-1.5 rounded text-primary hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors border border-dashed border-blue-200 dark:border-blue-800 group">
+<span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">add</span>
+<span class="text-xs font-bold uppercase tracking-wide">+ Agregar Ejercicio a Activación</span>
+</button>
+</div>
+</div>
+<div class="group relative border-b border-gray-200 dark:border-gray-700">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary z-10"></div>
+<div class="grid grid-cols-[140px_40px_3fr_80px_80px_100px_80px_2fr_50px] items-stretch hover:bg-blue-50/30 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+<div class="px-2 py-2 flex items-center justify-center border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+<div class="relative w-full">
+<select class="w-full text-[10px] font-bold uppercase tracking-wide text-primary bg-white border border-blue-200 dark:border-blue-900 rounded py-1.5 pl-2 pr-6 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer appearance-none shadow-sm">
+<option>Activación</option>
+<option selected="">Desarrollo</option>
+<option>Vuelta a la Calma</option>
+</select>
+<span class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-primary text-sm pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-center h-12 text-gray-300 cursor-grab active:cursor-grabbing hover:text-primary">
+<span class="material-symbols-outlined text-lg">drag_indicator</span>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full text-sm font-semibold text-[#101418] dark:text-white bg-transparent border-none p-0 focus:ring-0 placeholder-gray-400" type="text" value="Sentadilla Trasera"/>
+<span class="absolute right-0 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-sm pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="number" value="4"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="6-8"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 pr-4" type="number" value="8"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold pointer-events-none">RPE</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="3 min"/>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full text-xs text-[#5e758d] bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="Notas..." type="text" value="Bajar lento en 3s, mantener tensión."/>
+</div>
+<div class="h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 group/row">
+<button class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover/row:opacity-100">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-[140px_40px_3fr_80px_80px_100px_80px_2fr_50px] items-stretch hover:bg-blue-50/30 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+<div class="px-2 py-2 flex items-center justify-center border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+<div class="relative w-full">
+<select class="w-full text-[10px] font-bold uppercase tracking-wide text-primary bg-white border border-blue-200 dark:border-blue-900 rounded py-1.5 pl-2 pr-6 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer appearance-none shadow-sm">
+<option>Activación</option>
+<option selected="">Desarrollo</option>
+<option>Vuelta a la Calma</option>
+</select>
+<span class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-primary text-sm pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-center h-12 text-gray-300 cursor-grab hover:text-primary">
+<span class="material-symbols-outlined text-lg">drag_indicator</span>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full text-sm font-semibold text-[#101418] dark:text-white bg-transparent border-none p-0 focus:ring-0 placeholder-gray-400" type="text" value="Press Banca Plano"/>
+<span class="absolute right-0 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-sm pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="number" value="3"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="8"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 pr-4" type="number" value="9"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold pointer-events-none">RPE</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="2 min"/>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full text-xs text-[#5e758d] bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="Notas..." type="text" value=""/>
+</div>
+<div class="h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 group/row">
+<button class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover/row:opacity-100">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-[140px_40px_3fr_80px_80px_100px_80px_2fr_50px] items-stretch hover:bg-blue-50/30 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+<div class="px-2 py-2 flex items-center justify-center border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+<div class="relative w-full">
+<select class="w-full text-[10px] font-bold uppercase tracking-wide text-primary bg-white border border-blue-200 dark:border-blue-900 rounded py-1.5 pl-2 pr-6 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer appearance-none shadow-sm">
+<option>Activación</option>
+<option selected="">Desarrollo</option>
+<option>Vuelta a la Calma</option>
+</select>
+<span class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-primary text-sm pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-center h-12 text-gray-300 cursor-grab hover:text-primary">
+<span class="material-symbols-outlined text-lg">drag_indicator</span>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full text-sm font-semibold text-[#101418] dark:text-white bg-transparent border-none p-0 focus:ring-0 placeholder-gray-400" type="text" value="Peso Muerto Rumano"/>
+<span class="absolute right-0 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-sm pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="number" value="3"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="10-12"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 pr-4" type="number" value="7"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold pointer-events-none">RPE</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="2 min"/>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full text-xs text-[#5e758d] bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="Notas..." type="text" value="Enfocar en isquios"/>
+</div>
+<div class="h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 group/row">
+<button class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover/row:opacity-100">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-[140px_40px_3fr_80px_80px_100px_80px_2fr_50px] items-stretch hover:bg-blue-50/30 transition-colors border-b border-gray-100 dark:border-gray-800 last:border-b-0">
+<div class="px-2 py-2 flex items-center justify-center border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+<div class="relative w-full">
+<select class="w-full text-[10px] font-bold uppercase tracking-wide text-primary bg-white border border-blue-200 dark:border-blue-900 rounded py-1.5 pl-2 pr-6 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer appearance-none shadow-sm">
+<option>Activación</option>
+<option selected="">Desarrollo</option>
+<option>Vuelta a la Calma</option>
+</select>
+<span class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-primary text-sm pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-center h-12 text-gray-300 cursor-grab hover:text-primary">
+<span class="material-symbols-outlined text-lg">drag_indicator</span>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full text-sm font-semibold text-[#101418] dark:text-white bg-transparent border-none p-0 focus:ring-0 placeholder-gray-400" type="text" value="Remo con Barra"/>
+<span class="absolute right-0 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-sm pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="number" value="3"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="10"/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 pr-4" type="number" value="8"/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold pointer-events-none">RPE</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" type="text" value="90s"/>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full text-xs text-[#5e758d] bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="Notas..." type="text" value=""/>
+</div>
+<div class="h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 group/row">
+<button class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover/row:opacity-100">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+<div class="w-full p-2 bg-gray-50/50 dark:bg-gray-800/20 border-t border-gray-100 dark:border-gray-800">
+<button class="w-full flex items-center justify-center gap-1.5 py-1.5 rounded text-primary hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors border border-dashed border-blue-200 dark:border-blue-800 group">
+<span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">add</span>
+<span class="text-xs font-bold uppercase tracking-wide">+ Agregar Ejercicio a Desarrollo</span>
+</button>
+</div>
+</div>
+<div class="group grid grid-cols-[140px_40px_3fr_80px_80px_100px_80px_2fr_50px] gap-0 border-b border-gray-100 dark:border-gray-800 items-stretch opacity-60 hover:opacity-100">
+<div class="px-2 py-2 flex items-center justify-center border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+<div class="relative w-full">
+<select class="w-full text-[10px] font-bold uppercase tracking-wide text-gray-400 bg-transparent border border-gray-200 dark:border-gray-700 rounded py-1 pl-2 pr-6 focus:ring-1 focus:ring-primary focus:border-primary cursor-pointer appearance-none">
+<option disabled="" selected="">Etapa</option>
+<option>Activación</option>
+<option>Desarrollo</option>
+<option>Vuelta a la Calma</option>
+</select>
+<span class="absolute right-1 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-sm pointer-events-none">arrow_drop_down</span>
+</div>
+</div>
+<div class="flex items-center justify-center h-12 text-gray-300 cursor-grab hover:text-primary">
+<span class="material-symbols-outlined text-lg">drag_indicator</span>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full text-sm font-semibold text-[#101418] dark:text-white bg-transparent border-none p-0 focus:ring-0 placeholder-gray-400" placeholder="Nuevo ejercicio..." type="text" value=""/>
+<span class="absolute right-0 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-400 text-sm pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" placeholder="-" type="number" value=""/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" placeholder="-" type="text" value=""/>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<div class="relative w-full">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 pr-4" placeholder="-" type="number" value=""/>
+<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold pointer-events-none">RPE</span>
+</div>
+</div>
+<div class="px-2 h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0" placeholder="-" type="text" value=""/>
+</div>
+<div class="px-3 h-12 flex items-center border-l border-gray-100 dark:border-gray-800">
+<input class="w-full text-xs text-[#5e758d] bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300" placeholder="Notas..." type="text" value=""/>
+</div>
+<div class="h-12 flex items-center justify-center border-l border-gray-100 dark:border-gray-800 group/row">
+<button class="text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover/row:opacity-100">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="mt-4 flex justify-center">
+<button class="w-full flex items-center justify-center gap-2 h-12 rounded-lg border-2 border-dashed border-[#dae0e7] dark:border-gray-600 text-primary hover:bg-primary/5 hover:border-primary transition-all shadow-sm bg-white dark:bg-gray-800">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-bold text-sm">Agregar Nuevo Bloque</span>
+</button>
+</div>
+<div class="h-12"></div>
+</main>
+</div>
+</div></body></html>

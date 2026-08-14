@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Inicio - Stability Coach</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0056b3",
+                        "secondary": "#6b7280",
+                        "background-light": "#f8f9fa",
+                        "background-dark": "#0f1923",
+                        "card-light": "#ffffff",
+                        "card-dark": "#1a2632",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "1rem", "lg": "1.5rem", "xl": "2rem", "2xl": "1rem", "full": "9999px" },
+                    boxShadow: {
+                        "soft": "0 2px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.02)",
+                        "card": "0 0 0 1px rgba(0,0,0,0.03), 0 2px 8px rgba(0,0,0,0.04)",
+                        "nav": "0 -4px 20px -5px rgba(0, 0, 0, 0.05)"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: 100vh;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#101418] dark:text-white transition-colors duration-200 flex h-screen overflow-hidden">
+<aside class="w-64 bg-white dark:bg-card-dark border-r border-gray-100 dark:border-gray-800 hidden md:flex flex-col flex-shrink-0 z-20">
+<div class="p-6">
+<h1 class="text-primary dark:text-blue-400 text-2xl font-bold tracking-tight">STABILITY</h1>
+</div>
+<nav class="flex-1 px-4 py-2 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-primary dark:text-blue-400 rounded-xl transition-colors group" href="#">
+<span class="material-symbols-outlined filled text-[24px]">home</span>
+<span class="font-medium">Inicio</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 rounded-xl transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-105 transition-transform">bar_chart</span>
+<span class="font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 rounded-xl transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-105 transition-transform">fitness_center</span>
+<span class="font-medium">Biblioteca</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-secondary hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 rounded-xl transition-colors group" href="#">
+<span class="material-symbols-outlined text-[24px] group-hover:scale-105 transition-transform">calendar_month</span>
+<span class="font-medium">Planificador</span>
+</a>
+</nav>
+<div class="p-4 mt-auto">
+<div class="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 text-slate-500 dark:text-slate-300">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-sm font-bold text-slate-800 dark:text-white truncate">Coach Admin</span>
+<span class="text-xs text-secondary truncate">admin@stability.com</span>
+</div>
+</div>
+</div>
+</aside>
+<div class="flex-1 flex flex-col min-w-0 h-full relative">
+<header class="h-20 bg-white dark:bg-card-dark border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-8 z-10 flex-shrink-0 md:hidden">
+<div class="flex items-center gap-4">
+<h1 class="text-primary dark:text-blue-400 text-2xl font-bold tracking-tight">STABILITY</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="h-10 w-10 rounded-full bg-gray-200 bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-sm cursor-pointer hover:ring-2 ring-primary ring-offset-2 transition-all" data-alt="Coach profile picture" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAqcu8MmoySDYMncJpwpcC79mTV-KGJvTEZOAB1KXSGUKBzavr03LhdG6lQYsoHR9pTlFNj5Xgw29yhdTNnh0ikoerlh8e4j9KugKm7kiKqrEauH7VdWFt6z-I-JNXmXW79cQV6AjyjVIXARiAdNgmRsJ50CnUc3L-dTfaXpPGMmTxeisQ1Y9P7j0olzGy0LlhIwYXHMPqOIl9MzrncoeOEFxTlDYeJtLSbMd7cWXemVoE8bbpct1sxWc_04HG9xANh6z0Ee0224SP5');">
+</div>
+</div>
+</header>
+<header class="h-20 bg-white dark:bg-card-dark border-b border-gray-100 dark:border-gray-800 hidden md:flex items-center justify-between px-8 z-10 flex-shrink-0">
+<h2 class="text-xl font-bold text-gray-900 dark:text-white">Inicio</h2>
+<div class="flex items-center gap-6">
+<div class="h-10 w-10 rounded-full bg-gray-200 bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-sm cursor-pointer hover:ring-2 ring-primary ring-offset-2 transition-all" data-alt="Coach profile picture" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAqcu8MmoySDYMncJpwpcC79mTV-KGJvTEZOAB1KXSGUKBzavr03LhdG6lQYsoHR9pTlFNj5Xgw29yhdTNnh0ikoerlh8e4j9KugKm7kiKqrEauH7VdWFt6z-I-JNXmXW79cQV6AjyjVIXARiAdNgmRsJ50CnUc3L-dTfaXpPGMmTxeisQ1Y9P7j0olzGy0LlhIwYXHMPqOIl9MzrncoeOEFxTlDYeJtLSbMd7cWXemVoE8bbpct1sxWc_04HG9xANh6z0Ee0224SP5');">
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-8 lg:p-12">
+<div class="max-w-7xl mx-auto flex flex-col gap-8">
+<div class="flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<h2 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Mis Alumnos</h2>
+</div>
+<p class="text-secondary text-sm md:text-base">Gestiona los programas de entrenamiento y monitorea el progreso.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<div class="group bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 flex flex-col items-center text-center cursor-pointer">
+<div class="relative mb-4">
+<div class="h-24 w-24 rounded-full bg-gray-200 bg-cover bg-center ring-4 ring-gray-50 dark:ring-gray-800 shadow-sm group-hover:scale-105 transition-transform duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBMcksh0JqNeLkjB0_X0EQjA7L1Q14wnE73MzyEULusuSbXGFGw1GJUM7HQO0pyHQWq7lS3b091YNNkO6D_2K9AXiOyYWAmCcEp1-svnL7X__jSjlKINhmI005zIdpkTjeeV4Jou5FIO3FyTCyU3N1Om-bePvdPnrp3gEE7DVKLXeSbvmy9tbKV5me5TKSCQaxeAkhtT_iUUpuyard73iL4i3ZJJaJLDG0PZpSRg6QtJMNLiPrzxf45Ao8iSIReb8hH5IAufkLMFFHS');"></div>
+</div>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Juan Pérez</h3>
+<p class="text-sm text-secondary font-medium mb-6 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full">Intermedio • Hipertrofia</p>
+<button class="w-full mt-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-primary dark:text-blue-400 text-sm font-semibold py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 group-hover:border-blue-200">
+                        Ver Perfil
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<div class="group bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 flex flex-col items-center text-center cursor-pointer">
+<div class="relative mb-4">
+<div class="h-24 w-24 rounded-full bg-gray-200 bg-cover bg-center ring-4 ring-gray-50 dark:ring-gray-800 shadow-sm group-hover:scale-105 transition-transform duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDYoc5KE9nZSEoN27QMghJjb5HrVQkwJfnzTJfDwuSI8wxgPNh08BZjWls51xIUd5BoB-06UfZ0GsdaXhzYl4uRudO8RcZFpZ9ALLG-VAevDr8oQsQblvyW-HS4yqnL6BNH7K-iQYhhSJ9kLLY3mVY6UxG5T0D0zvJq10gmWZneRODS_Y6Ynj6XmHlDvBBYsvEpRU6Xm739iGq4en-7oKfQOcj6gaQjIjGxbgQvlhkvwNnfu1YBBtnqemzSLGOWuayorpnYWzYO-zhb');"></div>
+</div>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Maria Garcia</h3>
+<p class="text-sm text-secondary font-medium mb-6 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full">Avanzado • Fuerza</p>
+<button class="w-full mt-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-primary dark:text-blue-400 text-sm font-semibold py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 group-hover:border-blue-200">
+                        Ver Perfil
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<div class="group bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 flex flex-col items-center text-center cursor-pointer">
+<div class="relative mb-4">
+<div class="h-24 w-24 rounded-full bg-gray-200 bg-cover bg-center ring-4 ring-gray-50 dark:ring-gray-800 shadow-sm group-hover:scale-105 transition-transform duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBojqpm02WQY2af6AVEbqvd4zE5-cRtj-22tYQPPXQRfn8O7LD8cUHITAhGP2UyOgGWM_9VjhsDJVKq_VW81NbsJyUyIIrTHC-G_i_82R3PwY9sbWUTT57toSuxItXAWmBot4rc9M46PUKUthwVjsffHOGAsRt7HWSWIrgSvTtAFObi3VzP_eIkK00hlw-z5mjfQR_ziVSnQHNuGmuZd2iHnZyB8Cc9t5sfTk8SnuLvYPfO4cPYheVjibIyH61gdNMhq1xCuVOmdfss');"></div>
+</div>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Carlos Lopez</h3>
+<p class="text-sm text-secondary font-medium mb-6 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full">Principiante • Pérdida Peso</p>
+<button class="w-full mt-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-primary dark:text-blue-400 text-sm font-semibold py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 group-hover:border-blue-200">
+                        Ver Perfil
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<div class="group bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 flex flex-col items-center text-center cursor-pointer">
+<div class="relative mb-4">
+<div class="h-24 w-24 rounded-full bg-gray-200 bg-cover bg-center ring-4 ring-gray-50 dark:ring-gray-800 shadow-sm group-hover:scale-105 transition-transform duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBIKu7YjBD5Mdlh1JHtR3vlWWOwdTUHCn4QRdrvKVVIWa7K6KB0hP5mt1CMSOogTcjaPed36SE4nM9H1Orru-JZyj3xXyMc6WP-z5errKbA7JISB4Dm8o4OJNOhzvOOunA857pHRVesFg_ZVTy9I54CXQtBGE3bTm3IB3KG6viD0v9EM5j-uxlTItK2FOvtA8D5geEqV7ckStLQtgxLB-WkHFf6uh1ICEkEooP7A-3RKzxLTJf3uiXY_z3_OaZtnrlgGOacJf0ch0Le');"></div>
+</div>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Sofia Rodriguez</h3>
+<p class="text-sm text-secondary font-medium mb-6 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full">Intermedio • Rehab</p>
+<button class="w-full mt-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-primary dark:text-blue-400 text-sm font-semibold py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 group-hover:border-blue-200">
+                        Ver Perfil
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+<div class="group bg-white dark:bg-card-dark rounded-2xl p-8 shadow-card hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-100 dark:hover:border-blue-900/30 flex flex-col items-center text-center cursor-pointer">
+<div class="relative mb-4">
+<div class="h-24 w-24 rounded-full bg-gray-200 bg-cover bg-center ring-4 ring-gray-50 dark:ring-gray-800 shadow-sm group-hover:scale-105 transition-transform duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC-4dfXWgW31t82UvFl--Wsbx9_SOAUpx2Rc_tA40Hr9Q-cXuJpCeP5JXkxeQdQhx8fG8Z7QopfPUuJlfDbJ1BM_UA5n9rRjhK33Pr70Sd1Anp0dDcvNvolrRkOKJsNwaiii-yqK2u5iizgNu3evFTkLktG_R_i-QBizn1yemgsdT3YEaFBSYubc1RlZperguPiLoTRkEI1gNlByk27sJLc1TuhCvDt-Uvor4zX9zYOJd1E_KvddxinPNNcyk92Chg-bsBOCAVI-kOH');"></div>
+</div>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Miguel Angel</h3>
+<p class="text-sm text-secondary font-medium mb-6 bg-gray-50 dark:bg-gray-800 px-3 py-1 rounded-full">Avanzado • Powerlifting</p>
+<button class="w-full mt-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-primary dark:text-blue-400 text-sm font-semibold py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 group-hover:border-blue-200">
+                        Ver Perfil
+                        <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

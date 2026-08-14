@@ -1,0 +1,204 @@
+<!doctype html>
+<html class="light" lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Perfil del Alumno Simplificado</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#0056b2",
+              "background-light": "#ffffff",
+              "background-dark": "#0f1923",
+              "surface-light": "#F3F4F6",
+              "surface-dark": "#1e293b",
+            },
+            fontFamily: {
+              display: ["Lexend", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.5rem",
+              lg: "0.75rem",
+              xl: "1rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        min-height: max(884px, 100dvh);
+      }
+    </style>
+    <style>
+      body {
+        min-height: max(884px, 100dvh);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-background-light dark:bg-background-dark font-display text-[#1F2937] dark:text-gray-100 flex flex-col min-h-screen overflow-hidden"
+  >
+    <header
+      class="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark sticky top-0 z-10"
+    >
+      <div class="w-8"></div>
+      <h2 class="text-lg font-bold">Perfil</h2>
+      <button class="w-8 flex items-center justify-end text-primary">
+        <span class="material-symbols-outlined">settings</span>
+      </button>
+    </header>
+    <main class="flex-1 overflow-y-auto pb-24">
+      <div class="flex flex-col items-center pt-6 pb-8 px-4">
+        <div class="relative mb-4">
+          <div
+            class="w-28 h-28 rounded-full bg-center bg-cover shadow-lg border-4 border-white dark:border-surface-dark"
+            data-alt="Close up portrait of a confident young man in a studio setting"
+            style="
+              background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuBL2T-T_I7zVwfz06sBPAE-6tdgJNvJjA8uf7QOkQzkIOZ0LTxbHpSdpd55Kt3T7oUyOJu1P8GNTRzQyHpU9l7aN59DJo6d2AeVS61o1hftgITOFUx31EUDzaTnj746dkQOMWzXIE2IxI7lE5NnF_4E3h-Zdy_S4uisolgy6rqIeH8d1csw4djqFWGjCFQWvt-t_ShZsjp9Gjf63y5N1SCKs3u92ev4RwO7PHlqRxpdlQdkqQrK2S-rEqiqcEY_tNPBM15jGqBwTUaA&quot;);
+            "
+          ></div>
+        </div>
+        <h1 class="text-2xl font-bold text-[#101418] dark:text-white mb-2">
+          Juan Pérez
+        </h1>
+        <div
+          class="inline-flex items-center px-3 py-1.5 rounded-full bg-primary/10 text-primary"
+        >
+          <span class="material-symbols-outlined text-[18px] mr-1.5"
+            >fitness_center</span
+          >
+          <span class="text-sm font-medium">Plan Activo: Hipertrofia</span>
+        </div>
+      </div>
+      <div class="px-4 mb-8">
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            class="flex flex-col items-center justify-center p-3 bg-surface-light dark:bg-surface-dark rounded-lg group active:scale-95 transition-transform duration-150"
+          >
+            <div class="flex items-center justify-between w-full mb-1">
+              <span
+                class="material-symbols-outlined text-primary text-[20px] opacity-0 group-hover:opacity-100 transition-opacity"
+                >monitor_weight</span
+              >
+              <span class="material-symbols-outlined text-gray-400 text-[16px]"
+                >edit</span
+              >
+            </div>
+            <span class="text-lg font-bold text-[#101418] dark:text-white"
+              >78kg</span
+            >
+            <span
+              class="text-xs text-gray-500 font-medium uppercase tracking-wide"
+              >Peso</span
+            >
+          </button>
+          <button
+            class="flex flex-col items-center justify-center p-3 bg-surface-light dark:bg-surface-dark rounded-lg group active:scale-95 transition-transform duration-150"
+          >
+            <div class="flex items-center justify-between w-full mb-1">
+              <span
+                class="material-symbols-outlined text-primary text-[20px] opacity-0 group-hover:opacity-100 transition-opacity"
+                >height</span
+              >
+              <span class="material-symbols-outlined text-gray-400 text-[16px]"
+                >edit</span
+              >
+            </div>
+            <span class="text-lg font-bold text-[#101418] dark:text-white"
+              >175cm</span
+            >
+            <span
+              class="text-xs text-gray-500 font-medium uppercase tracking-wide"
+              >Altura</span
+            >
+          </button>
+        </div>
+      </div>
+      <div class="px-4 space-y-2">
+        <div
+          class="flex items-center p-3 bg-white dark:bg-surface-dark/50 border border-gray-100 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-surface-dark transition-colors cursor-pointer shadow-sm"
+        >
+          <div
+            class="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary mr-4 shrink-0"
+          >
+            <span class="material-symbols-outlined">medical_services</span>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-[#101418] dark:text-white">
+              Mis Lesiones
+            </h3>
+            <p class="text-sm text-gray-500">Ficha Médica</p>
+          </div>
+          <span class="material-symbols-outlined text-gray-400"
+            >chevron_right</span
+          >
+        </div>
+        <div class="h-4"></div>
+        <div
+          class="flex items-center p-3 rounded-xl cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+        >
+          <div
+            class="flex items-center justify-center w-12 h-12 rounded-lg bg-transparent text-red-500 mr-4 shrink-0"
+          >
+            <span class="material-symbols-outlined">logout</span>
+          </div>
+          <div class="flex-1">
+            <h3 class="text-base font-medium text-red-600 dark:text-red-400">
+              Cerrar Sesión
+            </h3>
+          </div>
+        </div>
+      </div>
+    </main>
+    <nav
+      class="bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-gray-800 fixed bottom-0 w-full pb-safe"
+    >
+      <div class="flex justify-around items-center h-16 pb-2">
+        <a
+          class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-primary transition-colors"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-[26px] mb-1">home</span>
+          <span class="text-[10px] font-medium">Inicio</span>
+        </a>
+        <a
+          class="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-primary transition-colors"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-[26px] mb-1"
+            >bar_chart</span
+          >
+          <span class="text-[10px] font-medium">Progreso</span>
+        </a>
+        <a
+          class="flex flex-col items-center justify-center w-full h-full text-primary"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-[26px] mb-1 fill-current"
+            >person</span
+          >
+          <span class="text-[10px] font-medium">Perfil</span>
+        </a>
+      </div>
+    </nav>
+    <style>
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+    </style>
+  </body>
+</html>
