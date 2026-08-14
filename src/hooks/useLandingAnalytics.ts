@@ -246,8 +246,11 @@ const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST || "https://us.posthog.co
 
 async function queryPostHogHogQL(query: string): Promise<unknown[][]> {
   const url = `${POSTHOG_HOST}/api/projects/${POSTHOG_PROJECT_ID}/query/`;
+  console.log("[PostHog] Querying:", url);
+  console.log("[PostHog] API Key present:", !!POSTHOG_PERSONAL_API_KEY, "| Project ID:", POSTHOG_PROJECT_ID);
   const response = await fetch(url, {
     method: "POST",
+    mode: "cors",
     headers: {
       "Authorization": `Bearer ${POSTHOG_PERSONAL_API_KEY}`,
       "Content-Type": "application/json",
@@ -255,14 +258,21 @@ async function queryPostHogHogQL(query: string): Promise<unknown[][]> {
     body: JSON.stringify({ query: { kind: "HogQLQuery", query } }),
   });
   if (!response.ok) {
-    throw new Error(`PostHog query failed with status ${response.status}`);
+    const errorText = await response.text();
+    console.error("[PostHog] Error response:", response.status, errorText);
+    throw new Error(`PostHog query failed with status ${response.status}: ${errorText}`);
   }
   const data = await response.json();
+  console.log("[PostHog] Query OK, rows:", data.results?.length ?? 0);
   return data.results || [];
 }
 
 async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyticsData | null> {
-  if (!POSTHOG_PROJECT_ID || !POSTHOG_PERSONAL_API_KEY) return null;
+  console.log("[PostHog] fetchRealPostHogMetrics called. PROJECT_ID:", POSTHOG_PROJECT_ID, "| API_KEY:", POSTHOG_PERSONAL_API_KEY ? "SET" : "EMPTY");
+  if (!POSTHOG_PROJECT_ID || !POSTHOG_PERSONAL_API_KEY) {
+    console.warn("[PostHog] Missing credentials → falling back to DEMO");
+    return null;
+  }
 
   try {
     let dateFilter = "timestamp >= now() - INTERVAL 7 DAY";
@@ -414,7 +424,7 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
       },
     };
   } catch (err) {
-    console.warn("PostHog API fetch failed, using fallback:", err);
+    console.error("[PostHog] ❌ API fetch FAILED → usando DEMO. Error:", err);
     return null;
   }
 }
