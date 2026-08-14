@@ -240,10 +240,8 @@ const DEMO_DATA_MAP: Record<TimeRange, LandingAnalyticsData> = {
 };
 
 // --- PostHog Live Query Helper ---
-// Las queries van al proxy server-side (/api/posthog-query) para evitar que
-// el SDK de PostHog en el browser intercepte y corrompa las llamadas a la API.
-const POSTHOG_PROJECT_ID = import.meta.env.VITE_POSTHOG_PROJECT_ID || "554935";
-const POSTHOG_PERSONAL_API_KEY = import.meta.env.VITE_POSTHOG_PERSONAL_API_KEY || "";
+// Las queries van al proxy server-side (/api/posthog-query).
+// La API key vive en el servidor — el browser solo llama al proxy.
 
 async function queryPostHogHogQL(query: string): Promise<unknown[][]> {
   const response = await fetch("/api/posthog-query", {
@@ -261,12 +259,6 @@ async function queryPostHogHogQL(query: string): Promise<unknown[][]> {
 }
 
 async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyticsData | null> {
-  if (!POSTHOG_PROJECT_ID || !POSTHOG_PERSONAL_API_KEY) {
-    console.warn("[PostHog] Missing credentials → usando DEMO");
-    return null;
-  }
-
-
   try {
     let dateFilter = "timestamp >= now() - INTERVAL 7 DAY";
     if (range === "today") dateFilter = "timestamp >= today()";
