@@ -269,7 +269,7 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
       queryPostHogHogQL(`SELECT event, count(), count(DISTINCT distinct_id) FROM events WHERE ${dateFilter} GROUP BY event`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'objetivo_cliente') AS o, count() FROM events WHERE event = 'registro_completado' AND ${dateFilter} GROUP BY o`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'barrera_principal') AS b, count() FROM events WHERE event = 'encuesta_respondida' AND ${dateFilter} GROUP BY b`),
-      queryPostHogHogQL(`SELECT toInteger(JSONExtractString(properties, 'slide_index')) AS s_idx, countIf(event = 'slide_visto') AS views, countIf(event = 'historia_pausada') AS pauses FROM events WHERE event IN ('slide_visto', 'historia_pausada') AND ${dateFilter} GROUP BY s_idx ORDER BY s_idx ASC`),
+      queryPostHogHogQL(`SELECT toInt(JSONExtractString(properties, 'slide_index')) AS s_idx, countIf(event = 'slide_visto') AS views, countIf(event = 'historia_pausada') AS pauses FROM events WHERE event IN ('slide_visto', 'historia_pausada') AND ${dateFilter} GROUP BY s_idx ORDER BY s_idx ASC`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'estado_audio') AS st, count() FROM events WHERE event = 'audio_toggled' AND ${dateFilter} GROUP BY st`),
       queryPostHogHogQL(`SELECT count(DISTINCT distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 5 MINUTE`),
     ]);
