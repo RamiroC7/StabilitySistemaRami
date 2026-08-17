@@ -23,7 +23,6 @@ import {
   Volume2,
   Clock,
   CheckCircle2,
-  TrendingUp,
   Award,
 } from "lucide-react";
 
@@ -39,14 +38,21 @@ export function LandingAnalytics() {
     refresh,
   } = useLandingAnalytics();
 
-  const { kpis, funnel, goals, barriers, slides, audio } = data;
-
   const timeRangeOptions: { id: TimeRange; label: string }[] = [
     { id: "today", label: "Hoy" },
     { id: "7d", label: "Últimos 7 días" },
     { id: "30d", label: "Últimos 30 días" },
     { id: "all", label: "Histórico completo" },
   ];
+
+  // Todavía no llegó la primera respuesta de PostHog (ni real ni demo) — mostrar
+  // un loading, no arrancar mostrando números hardcodeados que después "saltan"
+  // a los reales. Antes acá se mostraba DEMO_DATA_MAP durante 1-2s en cada carga.
+  if (!data) {
+    return <LandingAnalyticsSkeleton />;
+  }
+
+  const { kpis, funnel, goals, barriers, slides, audio } = data;
 
   return (
     <div className="space-y-6">
@@ -132,10 +138,9 @@ export function LandingAnalytics() {
             <div className="text-3xl font-extrabold text-gray-900 dark:text-white">
               {kpis.totalViews.toLocaleString()}
             </div>
-            <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 mt-1 font-medium">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <span>{kpis.activeUsersNow} activos ahora en la landing</span>
-            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Vistas de la landing en el período
+            </p>
           </div>
         </div>
 
@@ -198,11 +203,9 @@ export function LandingAnalytics() {
             <div className="text-3xl font-extrabold text-gray-900 dark:text-white">
               {kpis.storyCompletionRate}%
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-1">
-              <span>Tiempo ses.: {kpis.avgSessionDuration}</span>
-              <span>•</span>
-              <span>Rebote: {kpis.bounceRate}%</span>
-            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              % de visitantes que llegaron al final de la historia
+            </p>
           </div>
         </div>
       </div>
@@ -479,6 +482,40 @@ export function LandingAnalytics() {
             <span className="text-gray-700 dark:text-gray-300">Pausas Manuales</span>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Loading state para el primer fetch (antes de saber si hay datos reales o demo).
+// Reemplaza al viejo comportamiento de arrancar mostrando DEMO_DATA_MAP.
+function LandingAnalyticsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-surface-light p-5 rounded-2xl border border-gray-100 dark:border-border-light shadow-card">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-surface" />
+          <div className="h-5 w-48 rounded bg-gray-200 dark:bg-surface" />
+        </div>
+        <div className="h-9 w-64 rounded-xl bg-gray-200 dark:bg-surface" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="bg-white dark:bg-surface-light p-5 rounded-2xl border border-gray-100 dark:border-border-light shadow-card"
+          >
+            <div className="h-3 w-24 rounded bg-gray-200 dark:bg-surface" />
+            <div className="h-8 w-20 rounded bg-gray-200 dark:bg-surface mt-3" />
+            <div className="h-3 w-32 rounded bg-gray-200 dark:bg-surface mt-2" />
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 bg-white dark:bg-surface-light p-6 rounded-2xl border border-gray-100 dark:border-border-light shadow-card h-72" />
+        <div className="lg:col-span-5 bg-white dark:bg-surface-light p-6 rounded-2xl border border-gray-100 dark:border-border-light shadow-card h-72" />
       </div>
     </div>
   );

@@ -8,9 +8,6 @@ export interface LandingKpis {
   whatsappConversionRate: number;
   completedRegistrations: number;
   storyCompletionRate: number;
-  bounceRate: number;
-  avgSessionDuration: string;
-  activeUsersNow: number;
 }
 
 export interface DistributionEntry {
@@ -60,9 +57,6 @@ const DEMO_DATA_MAP: Record<TimeRange, LandingAnalyticsData> = {
       whatsappConversionRate: 16.9,
       completedRegistrations: 38,
       storyCompletionRate: 42.5,
-      bounceRate: 18.2,
-      avgSessionDuration: "2m 14s",
-      activeUsersNow: 3,
     },
     funnel: [
       { step: "Paso 1", label: "Visita Landing", users: 142, conversionRate: 100, dropRate: 0 },
@@ -106,9 +100,6 @@ const DEMO_DATA_MAP: Record<TimeRange, LandingAnalyticsData> = {
       whatsappConversionRate: 17.1,
       completedRegistrations: 275,
       storyCompletionRate: 44.8,
-      bounceRate: 16.5,
-      avgSessionDuration: "2m 28s",
-      activeUsersNow: 5,
     },
     funnel: [
       { step: "Paso 1", label: "Visita Landing", users: 984, conversionRate: 100, dropRate: 0 },
@@ -152,9 +143,6 @@ const DEMO_DATA_MAP: Record<TimeRange, LandingAnalyticsData> = {
       whatsappConversionRate: 16.7,
       completedRegistrations: 1080,
       storyCompletionRate: 46.1,
-      bounceRate: 15.8,
-      avgSessionDuration: "2m 35s",
-      activeUsersNow: 4,
     },
     funnel: [
       { step: "Paso 1", label: "Visita Landing", users: 3840, conversionRate: 100, dropRate: 0 },
@@ -198,9 +186,6 @@ const DEMO_DATA_MAP: Record<TimeRange, LandingAnalyticsData> = {
       whatsappConversionRate: 16.8,
       completedRegistrations: 2380,
       storyCompletionRate: 45.8,
-      bounceRate: 15.2,
-      avgSessionDuration: "2m 38s",
-      activeUsersNow: 4,
     },
     funnel: [
       { step: "Paso 1", label: "Visita Landing", users: 8450, conversionRate: 100, dropRate: 0 },
@@ -265,7 +250,7 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
     if (range === "30d") dateFilter = "timestamp >= now() - INTERVAL 30 DAY";
     if (range === "all") dateFilter = "1=1";
 
-    const [eventsRes, goalsRes, barriersRes, slidesRes, audioRes, activeRes] = await Promise.all([
+    const [eventsRes, goalsRes, barriersRes, slidesRes, audioRes] = await Promise.all([
       queryPostHogHogQL(`SELECT event, count(), count(DISTINCT distinct_id) FROM events WHERE ${dateFilter} GROUP BY event`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'objetivo_cliente') AS o, count() FROM events WHERE event = 'registro_completado' AND ${dateFilter} GROUP BY o`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'barrera_principal') AS b, count() FROM events WHERE event = 'encuesta_respondida' AND ${dateFilter} GROUP BY b`),
@@ -274,7 +259,6 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
       // cubre los eventos viejos ya grabados en PostHog con ese nombre.
       queryPostHogHogQL(`SELECT toInt(if(JSONExtractString(properties, 'numero_slide') != '', JSONExtractString(properties, 'numero_slide'), JSONExtractString(properties, 'slide_actual'))) AS s_idx, countIf(event = 'slide_visto') AS views, countIf(event = 'historia_pausada') AS pauses FROM events WHERE event IN ('slide_visto', 'historia_pausada') AND ${dateFilter} GROUP BY s_idx ORDER BY s_idx ASC`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'estado_audio') AS st, count() FROM events WHERE event = 'audio_toggled' AND ${dateFilter} GROUP BY st`),
-      queryPostHogHogQL(`SELECT count(DISTINCT distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 5 MINUTE`),
     ]);
 
     const eventCounts: Record<string, number> = {};
@@ -290,7 +274,6 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
 
     const whatsappConversionRate = totalViews > 0 ? Number(((whatsappClicks / totalViews) * 100).toFixed(1)) : 0;
     const storyCompletionRate = totalViews > 0 ? Number(((storyCompletions / totalViews) * 100).toFixed(1)) : 0;
-    const activeUsersNow = Number(activeRes[0]?.[0]) || 0;
 
     const funnel: FunnelStepData[] = [
       {
@@ -416,9 +399,6 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
         whatsappConversionRate,
         completedRegistrations,
         storyCompletionRate,
-        bounceRate: 15.0,
-        avgSessionDuration: "2m 15s",
-        activeUsersNow,
       },
       funnel,
       goals: goals.length > 0 ? goals : DEMO_DATA_MAP[range].goals,
@@ -442,9 +422,12 @@ export function useLandingAnalytics() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLiveUpdating, setIsLiveUpdating] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [analyticsData, setAnalyticsData] = useState<LandingAnalyticsData>(DEMO_DATA_MAP["7d"]);
+  // null = todavía no llegó la primera respuesta (ni real ni demo). La UI debe
+  // mostrar un loading acá, no un valor hardcodeado — para eso está DEMO_DATA_MAP,
+  // que solo se usa como fallback una vez que sabemos que PostHog falló.
+  const [analyticsData, setAnalyticsData] = useState<LandingAnalyticsData | null>(null);
   // true = lo que se está mostrando es el fallback hardcodeado, no PostHog real
-  const [isDemoData, setIsDemoData] = useState<boolean>(true);
+  const [isDemoData, setIsDemoData] = useState<boolean>(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchMetrics = useCallback(async (range: TimeRange, silent = false) => {
@@ -510,6 +493,7 @@ export function useLandingAnalytics() {
     isLiveUpdating,
     isDemoData,
     lastUpdated,
+    // null hasta que resuelve el primer fetch — ver comentario en el useState de arriba
     data: analyticsData,
     refresh,
   };
