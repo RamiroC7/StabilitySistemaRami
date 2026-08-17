@@ -134,6 +134,15 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     allowedHosts: ['.ngrok-free.dev'],
+    port: 3333,
+    proxy: {
+      // En dev: redirige /api al mini-servidor local (api-dev-proxy.js)
+      // En producción: Vercel lo maneja con la serverless function
+      "/api": {
+        target: "http://localhost:3334",
+        changeOrigin: true,
+      },
+    },
   },
   esbuild: {
     drop: mode === "production" ? (["console", "debugger"] as const) : [],

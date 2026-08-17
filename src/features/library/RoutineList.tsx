@@ -514,7 +514,9 @@ export default function RoutineList({ searchQuery }: { searchQuery: string }) {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [planToDelete, setPlanToDelete] = useState<{ id: string; title: string } | null>(null);
   const [planToRename, setPlanToRename] = useState<TrainingPlanSummary | null>(null);
-  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  // folderPath is a stack of folders: [] = root, [A] = inside A, [A, B] = inside A > B
+  const [folderPath, setFolderPath] = useState<PlanFolder[]>([]);
+  const activeFolderId = folderPath.length > 0 ? folderPath[folderPath.length - 1].id : null;
   const [folderNameModal, setFolderNameModal] = useState<{
     mode: "create" | "rename";
     folder?: PlanFolder;
@@ -540,6 +542,9 @@ export default function RoutineList({ searchQuery }: { searchQuery: string }) {
   const rootPlans = filteredPlans.filter((p) => !p.folder_id);
   const plansInFolder = (folderId: string) =>
     filteredPlans.filter((p) => p.folder_id === folderId);
+
+  // Folders visible at the current level
+  const visibleFolders = folders.filter((f) => f.parent_id === activeFolderId);
 
   const activeFolder = activeFolderId
     ? folders.find((f) => f.id === activeFolderId) ?? null
@@ -667,7 +672,7 @@ export default function RoutineList({ searchQuery }: { searchQuery: string }) {
   const handleFolderNameConfirm = async (name: string) => {
     if (!folderNameModal) return;
     if (folderNameModal.mode === "create") {
-      toast.promise(createFolder(name), {
+      toast.promise(createFolder(name, activeFolderId), {
         loading: "Creando carpeta...",
         success: "Carpeta creada",
         error: "Error al crear carpeta",
@@ -689,7 +694,8 @@ export default function RoutineList({ searchQuery }: { searchQuery: string }) {
       success: "Carpeta eliminada (los planes volvieron a la raiz)",
       error: "Error al eliminar carpeta",
     });
-    if (activeFolderId === folderToDelete.id) setActiveFolderId(null);
+    // If we deleted the active folder or an ancestor, go back to root
+    if (folderPath.some((f) => f.id === folderToDelete.id)) setFolderPath([]);
     setFolderToDelete(null);
   };
 
@@ -714,26 +720,36 @@ export default function RoutineList({ searchQuery }: { searchQuery: string }) {
       <div className="flex flex-col h-full">
         {/* Header bar: breadcrumb + new folder button */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm flex-wrap">
             <button
-              onClick={() => setActiveFolderId(null)}
+              onClick={() => setFolderPath([])}
               className={`font-semibold transition-colors ${
-                activeFolderId === null
+                folderPath.length === 0
                   ? "text-slate-900 dark:text-white cursor-default"
                   : "text-primary hover:text-primary/80"
               }`}
             >
               Todos los planes
             </button>
-            {activeFolder && (
+            {folderPath.map((folder, idx) => (
               <>
-                <span className="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
-                <span className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px] text-amber-400">folder_open</span>
-                  {activeFolder.name}
-                </span>
+                <span key={`sep-${folder.id}`} className="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
+                <button
+                  key={folder.id}
+                  onClick={() => setFolderPath(folderPath.slice(0, idx + 1))}
+                  className={`font-semibold flex items-center gap-1.5 transition-colors ${
+                    idx === folderPath.length - 1
+                      ? "text-slate-900 dark:text-white cursor-default"
+                      : "text-primary hover:text-primary/80"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px] text-amber-400">
+                    {idx === folderPath.length - 1 ? "folder_open" : "folder"}
+                  </span>
+                  {folder.name}
+                </button>
               </>
-            )}
+            ))}
           </div>
           
           <div className="flex items-center gap-3">
@@ -751,7 +767,7 @@ export default function RoutineList({ searchQuery }: { searchQuery: string }) {
               className="flex items-center gap-1.5 text-xs font-bold px-3 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary hover:border-primary/30 bg-white dark:bg-slate-800 transition-all shadow-sm"
             >
               <span className="material-symbols-outlined text-[16px]">create_new_folder</span>
-              Nueva carpeta
+              {activeFolderId ? "Nueva subcarpeta" : "Nueva carpeta"}
             </button>
           </div>
         </div>
@@ -759,17 +775,17 @@ export default function RoutineList({ searchQuery }: { searchQuery: string }) {
         {/* Drop zone to remove plan from folder */}
         <RootDropZone isVisible={!!draggingPlanId && activeFolderId !== null} />
 
-        {/* Folders grid — only at root */}
-        {activeFolderId === null && folders.length > 0 && (
+        {/* Folders grid — current level only */}
+        {visibleFolders.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mb-6">
-            {folders.map((folder) => (
+            {visibleFolders.map((folder) => (
               <FolderCard
                 key={folder.id}
                 folder={folder}
                 planCount={filteredPlans.filter((p) => p.folder_id === folder.id).length}
                 isOpen={false}
                 isDragOver={dragOverFolderId === folder.id}
-                onClick={() => setActiveFolderId(folder.id)}
+                onClick={() => setFolderPath([...folderPath, folder])}
                 onRename={(f) => setFolderNameModal({ mode: "rename", folder: f })}
                 onDelete={(f) => setFolderToDelete(f)}
               />

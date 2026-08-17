@@ -8,6 +8,7 @@ export interface PlanFolder {
   id: string;
   coach_id: string;
   name: string;
+  parent_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -83,14 +84,14 @@ export function usePlanFolders() {
     };
   }, [professor, fetchFolders, setPlans]);
 
-  const createFolder = async (name: string) => {
+  const createFolder = async (name: string, parentId?: string | null) => {
     if (!professor) return { success: false, error: "No autenticado" };
     const trimmed = name.trim();
     if (!trimmed) return { success: false, error: "El nombre no puede estar vacío" };
 
     const { data, error } = await supabase
       .from("plan_folders")
-      .insert({ coach_id: professor.id, name: trimmed })
+      .insert({ coach_id: professor.id, name: trimmed, parent_id: parentId ?? null })
       .select()
       .single();
 
