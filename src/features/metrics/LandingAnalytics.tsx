@@ -33,6 +33,7 @@ export function LandingAnalytics() {
     setTimeRange,
     isLoading,
     isLiveUpdating,
+    isDemoData,
     lastUpdated,
     data,
     refresh,
@@ -60,11 +61,21 @@ export function LandingAnalytics() {
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
                 Landing Page Analytics
               </h1>
-              {/* Badge En Vivo */}
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <span className={`w-2 h-2 rounded-full bg-emerald-500 ${isLiveUpdating ? "animate-ping" : "animate-pulse"}`} />
-                En Vivo
-              </div>
+              {/* Badge: En Vivo (datos reales de PostHog) vs Datos Demo (fallback, PostHog no responde) */}
+              {isDemoData ? (
+                <div
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                  title="No se pudo conectar con PostHog — se están mostrando datos de ejemplo, no reales"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  ⚠️ Datos Demo
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className={`w-2 h-2 rounded-full bg-emerald-500 ${isLiveUpdating ? "animate-ping" : "animate-pulse"}`} />
+                  En Vivo
+                </div>
+              )}
             </div>
           </div>
         </div>

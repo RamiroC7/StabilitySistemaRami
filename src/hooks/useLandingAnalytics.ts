@@ -269,7 +269,10 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
       queryPostHogHogQL(`SELECT event, count(), count(DISTINCT distinct_id) FROM events WHERE ${dateFilter} GROUP BY event`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'objetivo_cliente') AS o, count() FROM events WHERE event = 'registro_completado' AND ${dateFilter} GROUP BY o`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'barrera_principal') AS b, count() FROM events WHERE event = 'encuesta_respondida' AND ${dateFilter} GROUP BY b`),
-      queryPostHogHogQL(`SELECT toInt(JSONExtractString(properties, 'numero_slide')) AS s_idx, countIf(event = 'slide_visto') AS views, countIf(event = 'historia_pausada') AS pauses FROM events WHERE event IN ('slide_visto', 'historia_pausada') AND ${dateFilter} GROUP BY s_idx ORDER BY s_idx ASC`),
+      // 'numero_slide' es la propiedad correcta (la manda slide_visto).
+      // historia_pausada la mandaba como 'slide_actual' antes del fix — el if()
+      // cubre los eventos viejos ya grabados en PostHog con ese nombre.
+      queryPostHogHogQL(`SELECT toInt(if(JSONExtractString(properties, 'numero_slide') != '', JSONExtractString(properties, 'numero_slide'), JSONExtractString(properties, 'slide_actual'))) AS s_idx, countIf(event = 'slide_visto') AS views, countIf(event = 'historia_pausada') AS pauses FROM events WHERE event IN ('slide_visto', 'historia_pausada') AND ${dateFilter} GROUP BY s_idx ORDER BY s_idx ASC`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'estado_audio') AS st, count() FROM events WHERE event = 'audio_toggled' AND ${dateFilter} GROUP BY st`),
       queryPostHogHogQL(`SELECT count(DISTINCT distinct_id) FROM events WHERE timestamp >= now() - INTERVAL 5 MINUTE`),
     ]);
@@ -358,22 +361,41 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
     const totalAudio = mutedCount + unmutedCount;
     const unmutedPercentage = totalAudio > 0 ? Number(((unmutedCount / totalAudio) * 100).toFixed(1)) : 0;
 
+    // Slides reales de la landing (Landing-Page-Stability/index.html), en el
+    // mismo orden que aparecen en el DOM — id de cada <section class="slide">
+    // entre paréntesis. Si se agregan/sacan slides en la landing, actualizar acá.
+    const defaultSlideTitles = [
+      "Hero Intro",                       // slide-hero
+      "Formulario de Registro",           // slide-registro
+      "Encuesta: ¿Qué te frena?",         // slide-trigger
+      "App: Planificación Mensual",       // slide-feature-1
+      "App: Registro de Progreso",        // slide-feature-2
+      "App: Videos de Ejercicios",        // slide-feature-3
+      "App: Devoluciones Semanales",      // slide-feature-4
+      "App: Beneficios de Comunidad",     // slide-feature-5
+      "¿Quiénes Somos?",                  // slide-team-intro
+      "Equipo: Juampi Labari",            // slide-team-juampi
+      "Equipo: Juan Borreda",             // slide-team-juan
+      "Equipo: Agustín Ramis",            // slide-team-agustin
+      "Comunidad: Intro Testimonios",     // slide-testi-intro
+      "Testimonios (grupo 1)",            // slide-testi-1
+      "Testimonios (grupo 2)",            // slide-testi-2
+      "Testimonios (grupo 3)",            // slide-testi-3
+      "Testimonios (grupo 4)",            // slide-testi-4
+      "Preguntas Frecuentes",             // slide-faq
+      "Oferta Final (WhatsApp)",          // slide-contacto
+    ];
+
     const slidesMap: Record<number, { views: number; pauses: number }> = {};
     slidesRes.forEach(([slideIdx, views, pauses]) => {
       const idx = Number(slideIdx);
-      if (idx >= 1 && idx <= 10) {
+      if (idx >= 1 && idx <= defaultSlideTitles.length) {
         slidesMap[idx] = {
           views: Number(views) || 0,
           pauses: Number(pauses) || 0,
         };
       }
     });
-
-    const defaultSlideTitles = [
-      "Hero Intro", "Formulario Registro", "Encuesta Barreras", "App Propia",
-      "Planificación Mensual", "Registro de Progreso", "Devoluciones Semanales",
-      "Conocé al Equipo", "Testimonios Alumnos", "Oferta Final (WhatsApp)"
-    ];
 
     const slides: SlideMetric[] = defaultSlideTitles.map((title, i) => {
       const slideNum = i + 1;
@@ -421,6 +443,8 @@ export function useLandingAnalytics() {
   const [isLiveUpdating, setIsLiveUpdating] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [analyticsData, setAnalyticsData] = useState<LandingAnalyticsData>(DEMO_DATA_MAP["7d"]);
+  // true = lo que se está mostrando es el fallback hardcodeado, no PostHog real
+  const [isDemoData, setIsDemoData] = useState<boolean>(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchMetrics = useCallback(async (range: TimeRange, silent = false) => {
@@ -431,12 +455,15 @@ export function useLandingAnalytics() {
       const realData = await fetchRealPostHogMetrics(range);
       if (realData) {
         setAnalyticsData(realData);
+        setIsDemoData(false);
       } else {
         setAnalyticsData(DEMO_DATA_MAP[range]);
+        setIsDemoData(true);
       }
       setLastUpdated(new Date());
     } catch {
       setAnalyticsData(DEMO_DATA_MAP[range]);
+      setIsDemoData(true);
     } finally {
       setIsLoading(false);
       setTimeout(() => setIsLiveUpdating(false), 500);
@@ -481,6 +508,7 @@ export function useLandingAnalytics() {
     toggleAutoRefresh,
     isLoading,
     isLiveUpdating,
+    isDemoData,
     lastUpdated,
     data: analyticsData,
     refresh,
