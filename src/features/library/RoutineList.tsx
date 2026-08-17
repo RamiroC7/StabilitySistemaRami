@@ -546,10 +546,6 @@ export default function RoutineList({ searchQuery }: { searchQuery: string }) {
   // Folders visible at the current level
   const visibleFolders = folders.filter((f) => f.parent_id === activeFolderId);
 
-  const activeFolder = activeFolderId
-    ? folders.find((f) => f.id === activeFolderId) ?? null
-    : null;
-
   const displayedPlans = activeFolderId ? plansInFolder(activeFolderId) : rootPlans;
   const draggingPlan = draggingPlanId ? plans.find((p) => p.id === draggingPlanId) : null;
 
