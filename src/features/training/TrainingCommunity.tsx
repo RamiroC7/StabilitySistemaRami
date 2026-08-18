@@ -1,10 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Trophy, Dumbbell, Gift, ChevronRight } from "lucide-react";
+import { Users, Trophy, Video, Gift, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { useDataCacheStore } from "@/store/dataCacheStore";
 import { getMonthStart } from "@/hooks/useMonthlyRanking";
+import {
+  NOSOTROS_VISITS_KEY,
+  shouldShowVisitBadge,
+} from "@/features/training/news/newsStorageKeys";
 
 // ── Section cards configuration ──
 const sections: {
@@ -13,6 +17,7 @@ const sections: {
   icon: LucideIcon;
   path: string;
   color: string;
+  showDot?: boolean;
 }[] = [
   {
     title: "Nosotros",
@@ -20,6 +25,7 @@ const sections: {
     icon: Users,
     path: "/entrenamiento/comunidad/quienes-somos",
     color: "text-blue-500",
+    showDot: true,
   },
   {
     title: "Ranking de Posiciones",
@@ -29,9 +35,9 @@ const sections: {
     color: "text-blue-500",
   },
   {
-    title: "Lo que viene",
-    description: "Nuestro propio gimnasio está en camino. Enterate de los planes y novedades.",
-    icon: Dumbbell,
+    title: "Biblioteca de Videos",
+    description: "Videos que resuelven problemáticas puntuales de tu entrenamiento",
+    icon: Video,
     path: "/entrenamiento/comunidad/videos",
     color: "text-blue-500",
   },
@@ -47,6 +53,11 @@ const sections: {
 export default function TrainingCommunity() {
   const navigate = useNavigate();
   const prefetchMonthlyRanking = useDataCacheStore((s) => s.prefetchMonthlyRanking);
+  // TrainingCommunity se desmonta al navegar a /quienes-somos (es una ruta
+  // separada, fuera de TrainingLayout) y se remonta al volver — el useState
+  // relee localStorage en cada montada, asi que ya refleja las visitas
+  // acumuladas apenas el usuario vuelve de Nosotros.
+  const [showNosotrosDot] = useState<boolean>(() => shouldShowVisitBadge(NOSOTROS_VISITS_KEY));
 
   // Prefetch del ranking del mes actual en cuanto el usuario ve el menú de Comunidad,
   // así cuando navega al ranking los datos ya están en caché → carga instantánea.
@@ -87,11 +98,15 @@ export default function TrainingCommunity() {
               {/* Icon */}
               <div
                 className={cn(
-                  "w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
+                  "relative w-12 h-12 rounded-xl flex items-center justify-center shrink-0",
                   "bg-slate-50 dark:bg-slate-800",
                 )}
               >
                 <Icon className={cn("w-6 h-6", section.color)} strokeWidth={2} />
+                {/* Puntito de "no visto" — desaparece a partir de la 3ra visita */}
+                {section.showDot && showNosotrosDot && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-900" />
+                )}
               </div>
 
               {/* Content */}

@@ -36,9 +36,9 @@ export default function NewsVideos() {
           {/* Message */}
           <div className="space-y-4">
             <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
-              Estamos trabajando para traer novedades para vos
+              Muy pronto vas a encontrar acá videos que resuelven problemáticas puntuales de tu entrenamiento
             </h3>
-            
+
             {/* Animated dots */}
             <div className="flex items-center justify-center gap-2 pt-2">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />

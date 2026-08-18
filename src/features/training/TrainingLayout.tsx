@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { Home, BarChart2, User, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 import { useTrainingStore } from "@/features/training/store/trainingStore";
+import {
+  NOSOTROS_VISITS_KEY,
+  shouldShowVisitBadge,
+} from "@/features/training/news/newsStorageKeys";
 
-const tabs: { label: string; icon: LucideIcon; path: string }[] = [
+const tabs: { label: string; icon: LucideIcon; path: string; showDot?: boolean }[] = [
   { label: "Inicio", icon: Home, path: "/entrenamiento" },
   { label: "Progreso", icon: BarChart2, path: "/entrenamiento/progreso" },
-  { label: "Comunidad", icon: Users, path: "/entrenamiento/comunidad" },
+  { label: "Comunidad", icon: Users, path: "/entrenamiento/comunidad", showDot: true },
   { label: "Perfil", icon: User, path: "/entrenamiento/perfil" },
 ];
 
@@ -15,6 +20,13 @@ export default function TrainingLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const previewDayId = useTrainingStore((s) => s.previewDayId);
+  // TrainingLayout se desmonta al entrar a sub-paginas de Comunidad (rutas
+  // fuera de este layout) y se remonta al volver al bottom nav — mismo
+  // approach que TrainingCommunity para reflejar visitas frescas. Usa el
+  // mismo contador que el puntito de "Nosotros" para que desaparezcan juntos.
+  const [showComunidadDot] = useState<boolean>(() =>
+    shouldShowVisitBadge(NOSOTROS_VISITS_KEY),
+  );
 
   const activeTab = tabs.findIndex((t) => {
     if (t.path === "/entrenamiento") {
@@ -109,14 +121,20 @@ export default function TrainingLayout() {
                     }}
                   />
                 )}
-                <Icon
-                  size={20}
-                  className={cn(
-                    "transition-all duration-300 relative z-10",
-                    isActive && "scale-110 drop-shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
+                <span className="relative z-10 inline-flex">
+                  <Icon
+                    size={20}
+                    className={cn(
+                      "transition-all duration-300",
+                      isActive && "scale-110 drop-shadow-[0_1px_4px_rgba(59,130,246,0.25)]"
+                    )}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                  />
+                  {/* Puntito de "no visto" — desaparece a partir de la 3ra visita */}
+                  {tab.showDot && showComunidadDot && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 ring-2 ring-blue-50/30 dark:ring-blue-950/28" />
                   )}
-                  strokeWidth={isActive ? 2.5 : 1.8}
-                />
+                </span>
                 <span
                   className={cn(
                     "text-[10px] tracking-wide transition-all duration-300 relative z-10",

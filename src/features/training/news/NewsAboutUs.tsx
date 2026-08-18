@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Quote, Share2, Sparkles, Target, X } from "lucide-react";
+import { NOSOTROS_VISITS_KEY, registerVisit } from "@/features/training/news/newsStorageKeys";
 
 // ─── WhatsApp icon (mismo path que CoachContactButton, para consistencia) ────
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -138,6 +139,13 @@ function TeamCard({
 export default function NewsAboutUs() {
   const navigate = useNavigate();
   const [activeMember, setActiveMember] = useState<TeamMember | null>(null);
+
+  // Suma una visita cada vez que el usuario entra — el puntito rojo en
+  // Comunidad se muestra en la primera y segunda visita, y desaparece
+  // a partir de la tercera.
+  useEffect(() => {
+    registerVisit(NOSOTROS_VISITS_KEY);
+  }, []);
 
   const handleShare = async () => {
     const shareData = {
