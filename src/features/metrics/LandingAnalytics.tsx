@@ -238,23 +238,21 @@ export function LandingAnalytics() {
                       {item.label}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-gray-900 dark:text-white">
-                      {item.users.toLocaleString()} usuarios
-                    </span>
-                    <span className="px-2 py-0.5 rounded bg-gray-100 dark:bg-surface text-gray-700 dark:text-gray-300 font-semibold text-[11px]">
-                      {item.conversionRate}%
-                    </span>
-                  </div>
+                  <span className="font-bold text-gray-900 dark:text-white">
+                    {item.users.toLocaleString()} usuarios
+                  </span>
                 </div>
 
-                {/* Progress bar */}
-                <div className="w-full h-3 bg-gray-100 dark:bg-surface rounded-full overflow-hidden flex">
-                  <div
-                    className="h-full bg-gradient-to-r from-red-500 to-rose-600 transition-all duration-500 rounded-full"
-                    style={{ width: `${item.conversionRate}%` }}
-                  />
-                </div>
+                {/* Progress bar — el Paso 1 es la base (100% de si mismo por
+                    definicion), no aporta info, asi que no se dibuja */}
+                {idx > 0 && (
+                  <div className="w-full h-3 bg-gray-100 dark:bg-surface rounded-full overflow-hidden flex">
+                    <div
+                      className="h-full bg-gradient-to-r from-red-500 to-rose-600 transition-all duration-500 rounded-full"
+                      style={{ width: `${item.conversionRate}%` }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -434,7 +432,7 @@ export function LandingAnalytics() {
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Clock className="w-5 h-5 text-red-500" />
-              Retención e Interacción por Slide (Historias 1 a 10)
+              Retención e Interacción por Slide
             </h2>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               Conteo de vistas y pausas manuales en cada historia
