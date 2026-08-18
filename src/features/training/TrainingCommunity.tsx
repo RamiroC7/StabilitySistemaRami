@@ -56,6 +56,18 @@ export default function TrainingCommunity() {
     void prefetchMonthlyRanking(monthStart);
   }, [prefetchMonthlyRanking]);
 
+  // Prefetch de "Nosotros": precarga el chunk JS y calienta la cache HTTP de las
+  // fotos del equipo, así al entrar a la tab ya está todo listo (instantáneo).
+  // El service worker (CacheFirst para webp, ver vite.config.ts) se encarga de
+  // que las segundas visitas ya ni siquiera pidan red.
+  useEffect(() => {
+    void import("@/features/training/news/NewsAboutUs");
+    for (const src of ["/team-agus.webp", "/team-juan.webp"]) {
+      const img = new Image();
+      img.src = src;
+    }
+  }, []);
+
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-[#1F2937] dark:text-gray-100 flex flex-col min-h-full">
       {/* ── Sections Grid ── */}
