@@ -12,6 +12,7 @@
 // un reintento duplicado nunca crea dos sesiones.
 import { supabase } from "@/lib/supabase";
 import { useDataCacheStore } from "@/store/dataCacheStore";
+import { recomputeAssignmentProgress } from "@/lib/assignmentProgress";
 import type { SeriesLog } from "@/features/training/types";
 import type { SetDetail } from "@/hooks/useExerciseWeightLogs";
 
@@ -121,76 +122,15 @@ export async function performCompletionSync(
 
     if (insertErr) return { success: false, error: insertErr.message };
 
-    // Step 2 — leer metadata de la asignacion (incluye start_date)
-    const { data: assignmentData, error: readErr } = await supabase
-      .from("training_plan_assignments")
-      .select("completed_days, start_date, plan_id, training_plans(total_days)")
-      .eq("id", item.assignmentId)
-      .single();
-
-    if (readErr || !assignmentData) {
-      return {
-        success: false,
-        error: readErr?.message ?? "No se pudo leer la asignación",
-      };
-    }
-
-    const startDateISO = assignmentData.start_date
-      ? assignmentData.start_date.slice(0, 10)
-      : null;
-
-    let startDateMinus1: string | null = null;
-    if (startDateISO) {
-      const d = new Date(startDateISO + "T00:00:00");
-      d.setDate(d.getDate() - 1);
-      startDateMinus1 =
-        d.getFullYear() +
-        "-" +
-        String(d.getMonth() + 1).padStart(2, "0") +
-        "-" +
-        String(d.getDate()).padStart(2, "0");
-    }
-
-    const completionsQuery = supabase
-      .from("workout_completions")
-      .select("day_number")
-      .eq("assignment_id", item.assignmentId)
-      .eq("student_id", item.studentId);
-
-    const startTimestampUTC = startDateMinus1
-      ? new Date(startDateMinus1 + "T00:00:00").toISOString()
-      : null;
-
-    const { data: allCompletions } = startTimestampUTC
-      ? await completionsQuery.gte("completed_at", startTimestampUTC)
-      : await completionsQuery;
-
-    const uniqueCompletedDays = new Set(
-      (allCompletions ?? []).map((c) => c.day_number),
+    // Step 2 y 3 — recalcular completed_days/status de la asignacion a
+    // partir del estado real en workout_completions (misma logica que usa
+    // el borrado, factorizada en assignmentProgress.ts).
+    const progressResult = await recomputeAssignmentProgress(
+      item.studentId,
+      item.assignmentId,
+      item.dayNumber,
     );
-    const newCompletedDays = uniqueCompletedDays.size;
-
-    const planInfo = (
-      Array.isArray(assignmentData.training_plans)
-        ? assignmentData.training_plans[0]
-        : assignmentData.training_plans
-    ) as { total_days: number } | null;
-    const totalDays = planInfo?.total_days ?? 0;
-
-    const newStatus: "active" | "completed" =
-      newCompletedDays >= totalDays ? "completed" : "active";
-
-    // Step 3 — actualizar completed_days y status
-    const { error: updateErr } = await supabase
-      .from("training_plan_assignments")
-      .update({
-        completed_days: newCompletedDays,
-        current_day_number: item.dayNumber,
-        status: newStatus,
-      })
-      .eq("id", item.assignmentId);
-
-    if (updateErr) return { success: false, error: updateErr.message };
+    if (!progressResult.success) return progressResult;
 
     // Step 4 — upsert de exercise_weight_logs (idempotente por id, junto
     // con la completion — si uno de los dos falla, se reintenta el item

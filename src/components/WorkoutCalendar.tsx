@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useStudentConstancia } from "@/hooks/useStudentConstancia";
-import { useWorkoutCompletions } from "@/hooks/useWorkoutCompletions";
+import {
+  useWorkoutCompletions,
+  type WorkoutCompletion,
+} from "@/hooks/useWorkoutCompletions";
+import WorkoutDayDetail from "@/components/WorkoutDayDetail";
 import { ChevronLeft, ChevronRight, TrendingUp, Info } from "lucide-react";
 
 const WEEK_DAYS = ["L", "M", "M", "J", "V", "S", "D"];
@@ -11,9 +15,11 @@ interface WorkoutCalendarProps {
 
 export default function WorkoutCalendar({ studentId }: WorkoutCalendarProps) {
   const [currentMonth, setCurrentMonth] = useState(() => new Date());
+  const [selectedCompletion, setSelectedCompletion] =
+    useState<WorkoutCompletion | null>(null);
 
   // Use precisely the hooks we updated with SWR!
-  const { completions, loading: loadingCompletions } =
+  const { completions, loading: loadingCompletions, deleteCompletion } =
     useWorkoutCompletions(studentId);
   const { plans, isLoading: loadingPlans } = useStudentConstancia(studentId);
 
@@ -61,6 +67,16 @@ export default function WorkoutCalendar({ studentId }: WorkoutCalendarProps) {
   const completedDates: Set<string> = new Set(
     completions.map((c) => c.completedAt.slice(0, 10)),
   );
+
+  // Mapea fecha -> completion, para poder abrir el detalle/borrado al tocar
+  // un dia completado. Si hubiera mas de una sesion el mismo dia, se toma
+  // la mas reciente (completions ya viene ordenado por completed_at desc).
+  const completionsByDate = new Map<string, WorkoutCompletion>();
+  for (const c of completions) {
+    const dateStr = c.completedAt.slice(0, 10);
+    if (!completionsByDate.has(dateStr)) completionsByDate.set(dateStr, c);
+  }
+
 
   // Calculate expected workouts and attendance percentage for the CURRENT WEEK (Monday-Sunday)
   const calculateWeekAttendance = () => {
@@ -164,22 +180,36 @@ export default function WorkoutCalendar({ studentId }: WorkoutCalendarProps) {
               const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
               const isToday = dateStr === todayStr;
               const isCompleted = completedDates.has(dateStr);
+              const dayCompletion = completionsByDate.get(dateStr);
 
               if (isToday) {
                 return (
                   <div key={day} className="flex items-center justify-center">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-medium shadow-md shadow-emerald-200 dark:shadow-none">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        dayCompletion && setSelectedCompletion(dayCompletion)
+                      }
+                      disabled={!dayCompletion}
+                      className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-medium shadow-md shadow-emerald-200 dark:shadow-none active:scale-90 transition-transform disabled:active:scale-100"
+                    >
                       {day}
-                    </div>
+                    </button>
                   </div>
                 );
               }
               if (isCompleted) {
                 return (
                   <div key={day} className="flex items-center justify-center">
-                    <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium shadow-md shadow-blue-200 dark:shadow-none">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        dayCompletion && setSelectedCompletion(dayCompletion)
+                      }
+                      className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-medium shadow-md shadow-blue-200 dark:shadow-none active:scale-90 transition-transform"
+                    >
                       {day}
-                    </div>
+                    </button>
                   </div>
                 );
               }
@@ -264,6 +294,17 @@ export default function WorkoutCalendar({ studentId }: WorkoutCalendarProps) {
           </div>
         )}
       </div>
+
+      {/* Detalle del entrenamiento del dia — desde aca se puede eliminar */}
+      {selectedCompletion && (
+        <WorkoutDayDetail
+          completion={selectedCompletion}
+          studentId={studentId}
+          deleteCompletion={deleteCompletion}
+          onClose={() => setSelectedCompletion(null)}
+          onDeleted={() => setSelectedCompletion(null)}
+        />
+      )}
     </div>
   );
 }

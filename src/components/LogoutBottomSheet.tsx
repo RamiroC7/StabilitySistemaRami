@@ -31,21 +31,16 @@ export default function LogoutBottomSheet({
         onClick={onClose}
       />
 
-      {/* Bottom Sheet */}
+      {/* Dialog — centrado en la pantalla */}
       <div
         className={cn(
-          "fixed inset-x-0 bottom-0 z-[101] transform transition-all duration-300 ease-out",
-          isOpen ? "translate-y-0" : "translate-y-full"
+          "fixed inset-0 z-[101] flex items-center justify-center px-4 transform transition-all duration-300 ease-out",
+          isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
         )}
       >
-        <div className="relative bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl border-t border-slate-200 dark:border-slate-800 max-w-lg mx-auto">
-          {/* Handle/Drag indicator */}
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700" />
-          </div>
-
+        <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800">
           {/* Content */}
-          <div className="px-6 pt-4 pb-8">
+          <div className="px-6 pt-6 pb-6">
             {/* Close button */}
             <button
               onClick={onClose}

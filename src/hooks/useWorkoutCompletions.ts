@@ -11,6 +11,7 @@ import {
   performCompletionSync,
   type QueuedWorkoutCompletion,
 } from "@/lib/offlineWorkoutQueue";
+import { recomputeAssignmentProgress } from "@/lib/assignmentProgress";
 
 export interface WorkoutCompletion {
   id: string;
@@ -54,6 +55,9 @@ interface UseWorkoutCompletionsReturn {
   saveCompletion: (
     params: SaveCompletionParams,
   ) => Promise<{ success: boolean; error?: string; queued?: boolean }>;
+  deleteCompletion: (
+    completionId: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   refetch: () => void;
 }
 
@@ -265,6 +269,79 @@ export function useWorkoutCompletions(
     void flushPendingCompletions();
   }, []);
 
+  const deleteCompletion = useCallback(
+    async (completionId: string): Promise<{ success: boolean; error?: string }> => {
+      if (!studentId)
+        return { success: false, error: "No hay usuario autenticado" };
+
+      const target = (
+        useDataCacheStore.getState().workoutCompletions[studentId] ?? []
+      ).find((c) => c.id === completionId);
+      if (!target)
+        return { success: false, error: "Entrenamiento no encontrado" };
+
+      try {
+        const { error: deleteErr, count } = await supabase
+          .from("workout_completions")
+          .delete({ count: "exact" })
+          .eq("id", completionId)
+          .eq("student_id", studentId);
+
+        if (deleteErr) return { success: false, error: deleteErr.message };
+
+        // Si RLS bloquea el DELETE (falta la policy), Supabase no tira error
+        // — simplemente no borra ninguna fila. Sin este chequeo, count sería
+        // 0 y el llamador pensaría que se borró cuando en realidad no pasó
+        // nada.
+        if (!count) {
+          return {
+            success: false,
+            error:
+              "No se pudo eliminar (sin permiso). Verificá la policy de DELETE en workout_completions.",
+          };
+        }
+
+        // Best-effort: borra tambien los registros de peso de esa misma
+        // sesion. exercise_weight_logs no tiene un id de completion para
+        // vincularlos exacto, asi que se identifican por assignment + dia
+        // (coincide con como se guardaron juntos al completar la rutina).
+        await supabase
+          .from("exercise_weight_logs")
+          .delete()
+          .eq("student_id", studentId)
+          .eq("assignment_id", target.assignmentId)
+          .eq("plan_day_number", target.dayNumber);
+
+        const progressResult = await recomputeAssignmentProgress(
+          studentId,
+          target.assignmentId,
+        );
+        if (!progressResult.success) {
+          console.warn(
+            "[useWorkoutCompletions] No se pudo recalcular el progreso tras borrar:",
+            progressResult.error,
+          );
+        }
+
+        invalidateWorkoutCompletions(studentId);
+        const dataStore = useDataCacheStore.getState();
+        dataStore.invalidateActiveAssignment(studentId);
+        dataStore.invalidateStudentConstancia(studentId);
+        dataStore.invalidateExerciseWeightLogs(studentId);
+
+        await fetch(true);
+
+        return { success: true };
+      } catch (err) {
+        return {
+          success: false,
+          error: err instanceof Error ? err.message : "Error inesperado",
+        };
+      }
+    },
+    [studentId, fetch, invalidateWorkoutCompletions],
+  );
+
   // Completions cached state
   const completions = studentId ? workoutCompletions[studentId] || [] : [];
   const loading = isFetching && !isLoaded;
@@ -285,6 +362,7 @@ export function useWorkoutCompletions(
     loading,
     error,
     saveCompletion,
+    deleteCompletion,
     refetch,
   };
 }
