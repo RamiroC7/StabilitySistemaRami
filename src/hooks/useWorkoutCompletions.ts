@@ -3,6 +3,14 @@ import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import { useDataCacheStore } from "@/store/dataCacheStore";
 import type { SeriesLog } from "@/features/training/types";
+import type { SetDetail } from "@/hooks/useExerciseWeightLogs";
+import {
+  enqueueCompletion,
+  flushPendingCompletions,
+  isLikelyNetworkError,
+  performCompletionSync,
+  type QueuedWorkoutCompletion,
+} from "@/lib/offlineWorkoutQueue";
 
 export interface WorkoutCompletion {
   id: string;
@@ -12,6 +20,15 @@ export interface WorkoutCompletion {
   rpe: number | null;
   totalSetsDone: number | null;
   durationMinutes: number | null;
+}
+
+export interface ExerciseLogInput {
+  exerciseId: string;
+  exerciseName: string;
+  planDayNumber: number;
+  planDayName: string;
+  series: number;
+  setsDetail: SetDetail[];
 }
 
 export interface SaveCompletionParams {
@@ -24,6 +41,9 @@ export interface SaveCompletionParams {
   totalSetsDone: number;
   seriesLog: SeriesLog;
   durationMinutes?: number | null;
+  // Se guardan JUNTO con la completion (misma cola offline si hace falta),
+  // para que nunca quede una fila sincronizada sin la otra.
+  exerciseLogs?: ExerciseLogInput[];
 }
 
 interface UseWorkoutCompletionsReturn {
@@ -33,7 +53,7 @@ interface UseWorkoutCompletionsReturn {
   error: string | null;
   saveCompletion: (
     params: SaveCompletionParams,
-  ) => Promise<{ success: boolean; error?: string }>;
+  ) => Promise<{ success: boolean; error?: string; queued?: boolean }>;
   refetch: () => void;
 }
 
@@ -120,7 +140,7 @@ export function useWorkoutCompletions(
   const saveCompletion = useCallback(
     async (
       params: SaveCompletionParams,
-    ): Promise<{ success: boolean; error?: string }> => {
+    ): Promise<{ success: boolean; error?: string; queued?: boolean }> => {
       if (!professor?.id)
         return { success: false, error: "No hay usuario autenticado" };
 
@@ -133,124 +153,84 @@ export function useWorkoutCompletions(
         return { success: false, error: "Day number inválido" };
       }
 
-      try {
-        // Mapear mood a valores válidos del constraint de BD
-        // Los valores válidos son probablemente: 'excellent', 'good', 'tired', 'pain' o similares
-        let moodValue: string | null = null;
-        if (params.mood) {
-          const moodMap: Record<string, string> = {
-            excelente: "excellent",
-            normal: "normal",
-            fatigado: "tired",
-            molestia: "pain",
-          };
-          moodValue = moodMap[params.mood] || null;
-        }
-
-        // Step 1 — insert completion record
-        const insertData = {
-          student_id: professor.id,
-          assignment_id: params.assignmentId,
-          day_number: params.dayNumber,
-          rpe: params.rpe,
-          initial_mood: params.initialMood || null,
-          mood: moodValue,
-          mood_comment: params.moodComment || null,
-          total_sets_done: params.totalSetsDone,
-          duration_minutes: params.durationMinutes || null,
-          series_log: params.seriesLog as Record<string, unknown>,
+      // Mapear mood a valores válidos del constraint de BD
+      let moodValue: string | null = null;
+      if (params.mood) {
+        const moodMap: Record<string, string> = {
+          excelente: "excellent",
+          normal: "normal",
+          fatigado: "tired",
+          molestia: "pain",
         };
+        moodValue = moodMap[params.mood] || null;
+      }
 
-        const { error: insertErr } = await supabase
-          .from("workout_completions")
-          .insert(insertData);
+      // id generado en el cliente — permite reintentar (upsert) sin
+      // duplicar la sesión si la escritura se encola y se sincroniza despues.
+      const completionId = crypto.randomUUID();
+      const item: QueuedWorkoutCompletion = {
+        localId: completionId,
+        studentId: professor.id,
+        assignmentId: params.assignmentId,
+        dayNumber: params.dayNumber,
+        queuedAt: new Date().toISOString(),
+        rpe: params.rpe,
+        initialMood: params.initialMood || null,
+        mood: moodValue,
+        moodComment: params.moodComment || null,
+        totalSetsDone: params.totalSetsDone,
+        durationMinutes: params.durationMinutes || null,
+        seriesLog: params.seriesLog,
+        exerciseLogs: (params.exerciseLogs ?? []).map((log) => ({
+          id: crypto.randomUUID(),
+          exerciseId: log.exerciseId,
+          exerciseName: log.exerciseName,
+          planDayNumber: log.planDayNumber,
+          planDayName: log.planDayName,
+          series: log.series,
+          setsDetail: log.setsDetail,
+        })),
+      };
 
-        if (insertErr) {
-          return { success: false, error: insertErr.message };
+      const queueForLater = () => {
+        enqueueCompletion(item);
+
+        // Actualizacion optimista de la cache local: el alumno ya ve su
+        // sesion reflejada (calendario, racha) sin esperar la sincronizacion.
+        // completed_days del assignment se recalcula recien al sincronizar
+        // (necesita el estado real del servidor), asi que no se toca aca.
+        const current =
+          useDataCacheStore.getState().workoutCompletions[professor.id] ?? [];
+        setWorkoutCompletionsData(professor.id, [
+          {
+            id: item.localId,
+            assignmentId: item.assignmentId,
+            dayNumber: item.dayNumber,
+            completedAt: item.queuedAt,
+            rpe: item.rpe,
+            totalSetsDone: item.totalSetsDone,
+            durationMinutes: item.durationMinutes,
+          },
+          ...current,
+        ]);
+
+        return { success: true, queued: true };
+      };
+
+      // Sin conexión: ni siquiera intentamos la red, directo a la cola.
+      if (!navigator.onLine) {
+        return queueForLater();
+      }
+
+      try {
+        const result = await performCompletionSync(item);
+
+        if (!result.success) {
+          if (isLikelyNetworkError(result.error)) {
+            return queueForLater();
+          }
+          return { success: false, error: result.error };
         }
-
-        // Step 2 — read current assignment metadata (including start_date)
-        const { data: assignmentData, error: readErr } = await supabase
-          .from("training_plan_assignments")
-          .select(
-            "completed_days, start_date, plan_id, training_plans(total_days)",
-          )
-          .eq("id", params.assignmentId)
-          .single();
-
-        if (readErr || !assignmentData) {
-          return {
-            success: false,
-            error: readErr?.message ?? "No se pudo leer la asignación",
-          };
-        }
-
-        // Step 2b — count unique valid completed days (>= start_date - 1 day) from workout_completions.
-        // This is the source of truth for completed_days; we never blindly do +1.
-        // Using start_date as a lower bound ensures that if the coach moves the start date
-        // forward, old completions are excluded and the counter resets cleanly.
-        // We subtract 1 day to handle timezone offsets and students starting 1 day early.
-        const startDateISO = assignmentData.start_date
-          ? assignmentData.start_date.slice(0, 10)
-          : null;
-
-        let startDateMinus1: string | null = null;
-        if (startDateISO) {
-          const d = new Date(startDateISO + "T00:00:00");
-          d.setDate(d.getDate() - 1);
-          startDateMinus1 =
-            d.getFullYear() +
-            "-" +
-            String(d.getMonth() + 1).padStart(2, "0") +
-            "-" +
-            String(d.getDate()).padStart(2, "0");
-        }
-
-        const completionsQuery = supabase
-          .from("workout_completions")
-          .select("day_number")
-          .eq("assignment_id", params.assignmentId)
-          .eq("student_id", professor.id);
-
-        // Use LOCAL midnight of (start_date - 1 day) as the UTC lower bound for Supabase.
-        const startTimestampUTC = startDateMinus1
-          ? new Date(startDateMinus1 + "T00:00:00").toISOString()
-          : null;
-
-        const { data: allCompletions } = startTimestampUTC
-          ? await completionsQuery.gte("completed_at", startTimestampUTC)
-          : await completionsQuery;
-
-        // Count unique day_numbers that have been completed (including the one just inserted)
-        const uniqueCompletedDays = new Set(
-          (allCompletions ?? []).map((c) => c.day_number),
-        );
-        const newCompletedDays = uniqueCompletedDays.size;
-
-        // Derive totalDays from the plan info returned in the assignment query
-        const planInfo = (
-          Array.isArray(assignmentData.training_plans)
-            ? assignmentData.training_plans[0]
-            : assignmentData.training_plans
-        ) as { total_days: number } | null;
-        const totalDays = planInfo?.total_days ?? 0;
-
-        // Check if all days are now completed
-        const newStatus: "active" | "completed" =
-          newCompletedDays >= totalDays ? "completed" : "active";
-
-        // Step 3 — update completed_days and status (but NOT current_day_number)
-        // The next pending day is now calculated dynamically in useActiveAssignment
-        const { error: updateErr } = await supabase
-          .from("training_plan_assignments")
-          .update({
-            completed_days: newCompletedDays,
-            current_day_number: params.dayNumber,
-            status: newStatus,
-          })
-          .eq("id", params.assignmentId);
-
-        if (updateErr) return { success: false, error: updateErr.message };
 
         // Invalidar caché general que dependa de esto: constancias, assignment, profiles (estadísticas)
         invalidateWorkoutCompletions(professor.id);
@@ -258,20 +238,32 @@ export function useWorkoutCompletions(
         const dataStore = useDataCacheStore.getState();
         dataStore.invalidateActiveAssignment(professor.id);
         dataStore.invalidateStudentConstancia(professor.id);
+        dataStore.invalidateExerciseWeightLogs(professor.id);
 
-        // Refresh local state local state (for completions)
+        // Refresh local state (for completions)
         await fetch(true);
 
         return { success: true };
       } catch (err) {
+        if (isLikelyNetworkError(err)) {
+          return queueForLater();
+        }
         return {
           success: false,
           error: err instanceof Error ? err.message : "Error inesperado",
         };
       }
     },
-    [professor?.id, fetch, invalidateWorkoutCompletions],
+    [professor?.id, fetch, invalidateWorkoutCompletions, setWorkoutCompletionsData],
   );
+
+  // Reintento al montar: si quedaron sesiones pendientes de una salida sin
+  // señal, se intentan sincronizar apenas la app vuelve a abrirse. El
+  // listener de 'online' (registrado una sola vez a nivel de módulo en
+  // offlineWorkoutQueue.ts) cubre el caso de recuperar señal a mitad de uso.
+  useEffect(() => {
+    void flushPendingCompletions();
+  }, []);
 
   // Completions cached state
   const completions = studentId ? workoutCompletions[studentId] || [] : [];

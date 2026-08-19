@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useTrainingStore } from "@/features/training/store/trainingStore";
-import { useWorkoutCompletions } from "@/hooks/useWorkoutCompletions";
-import { useAuthStore } from "@/features/auth/store/authStore";
-import { supabase } from "@/lib/supabase";
+import {
+  useWorkoutCompletions,
+  type ExerciseLogInput,
+} from "@/hooks/useWorkoutCompletions";
 import { cn } from "@/lib/utils";
 import { Loader2, Save, Timer } from "lucide-react";
 
@@ -49,7 +50,6 @@ export default function WorkoutComplete() {
     updateActivity,
   } = useTrainingStore();
   const { saveCompletion, completions } = useWorkoutCompletions();
-  const professor = useAuthStore((s) => s.professor);
   const [isSaving, setIsSaving] = useState(false);
 
   // Update activity on mount
@@ -118,7 +118,46 @@ export default function WorkoutComplete() {
         ? Math.round((Date.now() - workoutStartedAt) / 60000)
         : null;
 
-      // 1. Save workout completion
+      // Ejercicios con peso a registrar — se mandan JUNTO con la completion
+      // (misma cola offline si hace falta) para que nunca quede una fila
+      // sincronizada sin la otra.
+      const exercisesToLog =
+        currentDay?.exercises.filter((ex) => ex.writeWeight) ?? [];
+
+      const exerciseLogs: ExerciseLogInput[] = exercisesToLog
+        .map((ex) => {
+          const setsDetail = ex.sets.map((set, setIndex) => {
+            const key = `${ex.id}-${setIndex}`;
+            const log = seriesLog[key];
+            return {
+              set_number: set.setNumber,
+              target_reps: set.targetReps,
+              actual_reps: log?.reps || null,
+              kg: log?.kg ? parseFloat(log.kg) : null,
+            };
+          });
+
+          // Solo guardar si al menos una serie tiene datos reales
+          const hasRealData = setsDetail.some(
+            (s) =>
+              s.kg != null &&
+              s.kg > 0 &&
+              s.actual_reps != null &&
+              s.actual_reps !== "",
+          );
+          if (!hasRealData) return null;
+
+          return {
+            exerciseId: String(ex.id),
+            exerciseName: ex.name,
+            planDayNumber: currentDayNumber,
+            planDayName: currentDay?.name ?? "",
+            series: ex.sets.length,
+            setsDetail,
+          };
+        })
+        .filter((log): log is ExerciseLogInput => log !== null);
+
       const result = await saveCompletion({
         assignmentId,
         dayNumber: currentDayNumber,
@@ -129,61 +168,19 @@ export default function WorkoutComplete() {
         totalSetsDone: doneSets,
         seriesLog,
         durationMinutes,
+        exerciseLogs,
       });
 
-      if (result.success) {
-        // 2. Save exercise_weight_logs if needed
-        const exercisesToLog =
-          currentDay?.exercises.filter((ex) => ex.writeWeight) ?? [];
-
-        if (exercisesToLog.length > 0 && professor?.id) {
-          const logsToInsert = exercisesToLog
-            .map((ex) => {
-              const setsDetail = ex.sets.map((set, setIndex) => {
-                const key = `${ex.id}-${setIndex}`;
-                const log = seriesLog[key];
-                return {
-                  set_number: set.setNumber,
-                  target_reps: set.targetReps,
-                  actual_reps: log?.reps || null,
-                  kg: log?.kg ? parseFloat(log.kg) : null,
-                };
-              });
-
-              // Solo guardar si al menos una serie tiene datos reales
-              const hasRealData = setsDetail.some(
-                (s) =>
-                  s.kg != null &&
-                  s.kg > 0 &&
-                  s.actual_reps != null &&
-                  s.actual_reps !== "",
-              );
-              if (!hasRealData) return null;
-
-              return {
-                student_id: professor.id,
-                assignment_id: assignmentId,
-                exercise_id: String(ex.id),
-                exercise_name: ex.name,
-                plan_day_number: currentDayNumber,
-                plan_day_name: currentDay?.name ?? "",
-                series: ex.sets.length,
-                sets_detail: setsDetail,
-              };
-            })
-            .filter(Boolean);
-
-          if (logsToInsert.length > 0) {
-            const { error: logsError } = await supabase
-              .from("exercise_weight_logs")
-              .insert(logsToInsert);
-
-            if (logsError) {
-              console.error("Error saving exercise weight logs:", logsError);
-            }
-          }
-        }
-
+      if (result.success && result.queued) {
+        // Sin señal: se guardó localmente y va a sincronizar solo cuando
+        // vuelva la conexión. Nunca mostrar esto como un error — el
+        // entrenamiento SÍ quedó guardado.
+        toast.success("Guardado 📶 se sincroniza cuando vuelva la conexión", {
+          duration: 5000,
+        });
+        resetTraining();
+        navigate("/entrenamiento", { replace: true });
+      } else if (result.success) {
         toast.success("¡Entrenamiento guardado! 💪");
         resetTraining();
         navigate("/entrenamiento", { replace: true });
