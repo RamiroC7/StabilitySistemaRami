@@ -216,7 +216,7 @@ function buildGenderDistribution(
   return result;
 }
 
-function calculateMetricsForMonth(
+export function calculateMetricsForMonth(
   year: number,
   monthIndex: number,
   students: RawStudent[],

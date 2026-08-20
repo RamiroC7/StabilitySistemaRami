@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import { useDataCacheStore } from "@/store/dataCacheStore";
+import { selectPendingDay } from "@/lib/pendingDay";
 
 export interface AvailableDay {
   id: string;
@@ -175,77 +176,14 @@ export function useActiveAssignment(): UseActiveAssignmentReturn {
         });
 
         // ── Find next pending day ──────────────────────────────────────
-        // Only count completions whose LOCAL calendar date >= start_date.
-        // completed_at is stored in UTC; we extract the local date on the device
-        // so that e.g. a completion at 01:26 UTC = 22:26 local (UTC-3) on March 1
-        // is correctly treated as "March 1" and excluded when start_date is "March 2".
-        const toLocalDateStr = (iso: string) => {
-          const d = new Date(iso);
-          return (
-            d.getFullYear() +
-            "-" +
-            String(d.getMonth() + 1).padStart(2, "0") +
-            "-" +
-            String(d.getDate()).padStart(2, "0")
-          );
-        };
-
-        const assignmentStartDay = assignmentData.start_date
-          ? assignmentData.start_date.slice(0, 10)
-          : null;
-
-        let assignmentStartDayMinus1: string | null = null;
-        if (assignmentStartDay) {
-          const d = new Date(assignmentStartDay + "T00:00:00");
-          d.setDate(d.getDate() - 1);
-          assignmentStartDayMinus1 =
-            d.getFullYear() +
-            "-" +
-            String(d.getMonth() + 1).padStart(2, "0") +
-            "-" +
-            String(d.getDate()).padStart(2, "0");
-        }
-
-        // Helper to get monday 00:00 of the current week (local timezone)
-        const getMondayOfCurrentWeekStr = (): string => {
-          const now = new Date();
-          const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon, ...
-          const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-          const monday = new Date(now);
-          monday.setDate(now.getDate() + diff);
-          return (
-            monday.getFullYear() +
-            "-" +
-            String(monday.getMonth() + 1).padStart(2, "0") +
-            "-" +
-            String(monday.getDate()).padStart(2, "0")
-          );
-        };
-
-        const currentWeekMondayLocal = getMondayOfCurrentWeekStr();
-
-        // Use the maximum of start date (minus 1 day) and this week's Monday as the lower bound
-        const effectiveLowerBound = assignmentStartDayMinus1 && assignmentStartDayMinus1 > currentWeekMondayLocal
-          ? assignmentStartDayMinus1
-          : currentWeekMondayLocal;
-
-        const completedDayNumbers = new Set(
-          (completionsData ?? [])
-            .filter((c) => {
-              if (c.assignment_id !== assignmentData.id) return false;
-              const completedLocalDay = toLocalDateStr(c.completed_at ?? "");
-              return completedLocalDay >= effectiveLowerBound;
-            })
-            .map((c) => c.day_number),
+        // Logica extraida a selectPendingDay (src/lib/pendingDay.ts) para
+        // poder testearla sola, sin depender de Supabase ni de este hook.
+        const dayData = selectPendingDay(
+          sortedDays,
+          completionsData ?? [],
+          assignmentData.id,
+          assignmentData.start_date,
         );
-
-        let dayData = sortedDays.find(
-          (day) => !completedDayNumbers.has(day.day_number),
-        );
-        // If all completed, show the last day
-        if (!dayData && sortedDays.length > 0) {
-          dayData = sortedDays[sortedDays.length - 1];
-        }
 
         if (!dayData) {
           setActiveAssignmentData(studentId, null);

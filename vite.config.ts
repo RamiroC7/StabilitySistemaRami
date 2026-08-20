@@ -1,6 +1,10 @@
 import path from "path";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+// defineConfig de "vitest/config" en vez de "vite": es el mismo objeto de
+// config de Vite (mismos plugins, mismo alias "@"), pero con los tipos de
+// Vitest sumados encima — asi el bloque "test" de abajo no pisa nada y no
+// hace falta un vitest.config.ts aparte que duplique alias/plugins.
+import { defineConfig } from "vitest/config";
 import { VitePWA } from "vite-plugin-pwa";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 
@@ -208,5 +212,13 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
+  },
+  test: {
+    // Funciones puras (fechas, metricas, agrupacion) — no hace falta un DOM.
+    environment: "node",
+    // Fija reloj/zona horaria antes de cada test (ver vitest.setup.ts). Sin
+    // esto, un test con fechas puede pasar en una maquina y fallar en otra
+    // (o en el servidor de CI) solo por la hora/zona en la que corre.
+    setupFiles: ["./vitest.setup.ts"],
   },
 }));

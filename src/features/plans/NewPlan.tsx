@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import ConfirmActionModal from "../../components/ConfirmActionModal";
 import SortableExerciseRow from "./SortableExerciseRow";
 import CircuitCard from "./CircuitCard";
+import { getBlocksForActiveDay } from "./circuitBlocks";
 import {
   SELECTABLE_FIELDS,
   getSelectionBounds,
@@ -47,64 +48,6 @@ interface Day {
   id: string;
   number: number;
   name: string;
-}
-
-type PlannerBlock =
-  | { type: "single"; id: string; exercise: PlanExercise }
-  | { type: "circuit"; id: string; circuitGroup: string; exercises: PlanExercise[] };
-
-function getBlocksForActiveDay(dayExs: PlanExercise[]) {
-  const blocks: PlannerBlock[] = [];
-  let currentCircuit: string | null = null;
-  let currentCircuitExercises: PlanExercise[] = [];
-
-  const sortedDayExs = [...dayExs].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
-  for (const ex of sortedDayExs) {
-    if (ex.circuit_group) {
-      if (ex.circuit_group === currentCircuit) {
-        currentCircuitExercises.push(ex);
-      } else {
-        if (currentCircuit !== null && currentCircuitExercises.length > 0) {
-          blocks.push({
-            type: "circuit",
-            id: `circuit-${currentCircuit}-${currentCircuitExercises[0].id}`,
-            circuitGroup: currentCircuit,
-            exercises: currentCircuitExercises,
-          });
-        }
-        currentCircuit = ex.circuit_group;
-        currentCircuitExercises = [ex];
-      }
-    } else {
-      if (currentCircuit !== null && currentCircuitExercises.length > 0) {
-        blocks.push({
-          type: "circuit",
-          id: `circuit-${currentCircuit}-${currentCircuitExercises[0].id}`,
-          circuitGroup: currentCircuit,
-          exercises: currentCircuitExercises,
-        });
-        currentCircuit = null;
-        currentCircuitExercises = [];
-      }
-      blocks.push({
-        type: "single",
-        id: ex.id,
-        exercise: ex,
-      });
-    }
-  }
-
-  if (currentCircuit !== null && currentCircuitExercises.length > 0) {
-    blocks.push({
-      type: "circuit",
-      id: `circuit-${currentCircuit}-${currentCircuitExercises[0].id}`,
-      circuitGroup: currentCircuit,
-      exercises: currentCircuitExercises,
-    });
-  }
-
-  return blocks;
 }
 
 // Removed legacy loadFromStorage and saveToStorage since usePlannerTabs handles it
