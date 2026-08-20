@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import ExerciseAutocomplete from "../../components/ExerciseAutocomplete";
 import type { PlanExercise } from "../../lib/types";
 import type { LibraryExercise } from "@/features/training/store/trainingStore";
+import type { SelectableField } from "./cellSelection";
 
 interface SortableExerciseRowProps {
     exercise: PlanExercise;
@@ -15,6 +16,14 @@ interface SortableExerciseRowProps {
     handleDeleteExercise: (exerciseId: string) => void;
     circuitPosition?: 'first' | 'middle' | 'last' | 'none';
     isInsideCircuit?: boolean;
+    // Seleccion tipo planilla de calculo (Series/Reps/Carga/Pausa) — opcional,
+    // filas dentro de un circuito no participan.
+    rowIndex?: number;
+    selectedFields?: Set<SelectableField>;
+    onCellMouseDown?: (field: SelectableField, e: React.MouseEvent) => void;
+    // Doble-click en una celda seleccionable: entra en modo edicion (foco +
+    // texto pre-seleccionado). Un click simple ya NO enfoca el input.
+    onCellDoubleClick?: (e: React.MouseEvent<HTMLInputElement>) => void;
 }
 
 export default function SortableExerciseRow({
@@ -28,7 +37,21 @@ export default function SortableExerciseRow({
     handleDeleteExercise,
     circuitPosition = 'none',
     isInsideCircuit = false,
+    rowIndex,
+    selectedFields,
+    onCellMouseDown,
+    onCellDoubleClick,
 }: SortableExerciseRowProps) {
+    const isCellSelected = (field: SelectableField) => selectedFields?.has(field) ?? false;
+    const selectedCellClass = (field: SelectableField) =>
+        isCellSelected(field)
+            ? "ring-2 ring-blue-400 dark:ring-blue-500 bg-blue-50 dark:bg-blue-900/30"
+            : "";
+    // data-attributes que usa el drag-select del padre (NewPlan) para saber,
+    // durante el mousemove, sobre que celda esta el cursor — sin tener que
+    // cablear un listener por celda.
+    const cellDataAttrs = (field: SelectableField) =>
+        rowIndex !== undefined ? { "data-cell-row": rowIndex, "data-cell-field": field } : {};
     const {
         attributes,
         listeners,
@@ -242,10 +265,13 @@ export default function SortableExerciseRow({
                         </div>
                     ) : (
                         <input
-                            className="navigable-cell w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0"
+                            className={`navigable-cell w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 ${selectedCellClass("series")}`}
                             type="text"
                             inputMode="numeric"
                             value={exercise.series !== undefined && exercise.series !== null ? exercise.series : ""}
+                            {...cellDataAttrs("series")}
+                            onMouseDown={(e) => onCellMouseDown?.("series", e)}
+                            onDoubleClick={onCellDoubleClick}
                             onChange={(e) => {
                                 const val = e.target.value;
                                 handleUpdateExercise(exercise.id, "series", val === "" ? "" : parseInt(val) || 0);
@@ -259,12 +285,15 @@ export default function SortableExerciseRow({
                     {isCardio ? (
                         <div className="relative w-full flex items-center">
                             <input
-                                className="navigable-cell w-full h-8 text-center text-sm font-medium bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800 focus:ring-1 focus:ring-orange-400 p-0 pr-6 text-orange-700 dark:text-orange-300"
+                                className={`navigable-cell w-full h-8 text-center text-sm font-medium bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800 focus:ring-1 focus:ring-orange-400 p-0 pr-6 text-orange-700 dark:text-orange-300 ${selectedCellClass("reps")}`}
                                 type="text"
                                 inputMode="numeric"
                                 placeholder="min"
                                 title="Duración en minutos"
                                 value={exercise.cardio_duration_min !== undefined && exercise.cardio_duration_min !== null ? exercise.cardio_duration_min : ""}
+                                {...cellDataAttrs("reps")}
+                                onMouseDown={(e) => onCellMouseDown?.("reps", e)}
+                            onDoubleClick={onCellDoubleClick}
                                 onChange={(e) => {
                                     const val = e.target.value;
                                     handleUpdateExercise(exercise.id, "cardio_duration_min", val === "" ? "" : parseInt(val) || 0);
@@ -274,9 +303,12 @@ export default function SortableExerciseRow({
                         </div>
                     ) : (
                         <input
-                            className="navigable-cell w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0"
+                            className={`navigable-cell w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 ${selectedCellClass("reps")}`}
                             type="text"
                             value={exercise.reps}
+                            {...cellDataAttrs("reps")}
+                            onMouseDown={(e) => onCellMouseDown?.("reps", e)}
+                            onDoubleClick={onCellDoubleClick}
                             onChange={(e) => handleUpdateExercise(exercise.id, "reps", e.target.value)}
                         />
                     )}
@@ -290,9 +322,12 @@ export default function SortableExerciseRow({
                         </div>
                     ) : (
                         <input
-                            className="navigable-cell w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0"
+                            className={`navigable-cell w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 ${selectedCellClass("carga")}`}
                             type="text"
                             value={exercise.carga}
+                            {...cellDataAttrs("carga")}
+                            onMouseDown={(e) => onCellMouseDown?.("carga", e)}
+                            onDoubleClick={onCellDoubleClick}
                             onChange={(e) => handleUpdateExercise(exercise.id, "carga", e.target.value)}
                         />
                     )}
@@ -312,11 +347,14 @@ export default function SortableExerciseRow({
                     )}
                     <div className="relative z-10 w-full flex items-center justify-center">
                         <input
-                            className={`navigable-cell w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 ${
+                            className={`navigable-cell w-full h-8 text-center text-sm font-medium bg-[#f5f7f8] dark:bg-gray-800 rounded border-none focus:ring-1 focus:ring-primary p-0 ${selectedCellClass("pause")} ${
                                 circuitPosition === 'last' ? "opacity-60 bg-gray-100 dark:bg-gray-900/50 cursor-not-allowed select-none" : ""
                             }`}
                             type="text"
                             value={exercise.pause}
+                            {...cellDataAttrs("pause")}
+                            onMouseDown={(e) => onCellMouseDown?.("pause", e)}
+                            onDoubleClick={onCellDoubleClick}
                             onChange={(e) => handleUpdateExercise(exercise.id, "pause", e.target.value)}
                             disabled={circuitPosition === 'last'}
                             placeholder={circuitPosition === 'last' ? "Arriba" : ""}

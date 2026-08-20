@@ -16,6 +16,15 @@ import { toast } from "sonner";
 import ConfirmActionModal from "../../components/ConfirmActionModal";
 import SortableExerciseRow from "./SortableExerciseRow";
 import CircuitCard from "./CircuitCard";
+import {
+  SELECTABLE_FIELDS,
+  getSelectionBounds,
+  isMultiCellSelection,
+  computeFieldUpdate,
+  readFieldValue,
+  type SelectableField,
+  type CellSelectionState,
+} from "./cellSelection";
 import PlannerTabBar from "../../components/PlannerTabBar";
 import { usePlannerTabs } from "../../hooks/usePlannerTabs";
 import {
@@ -153,6 +162,12 @@ export default function NewPlan() {
   const [isDeleteExerciseModalOpen, setIsDeleteExerciseModalOpen] = useState(false);
   const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
 
+  // Seleccion tipo planilla de calculo (Series/Reps/Carga/Pausa) — ver cellSelection.ts
+  const [cellSelection, setCellSelection] = useState<CellSelectionState | null>(null);
+  const cellTableRef = useRef<HTMLDivElement>(null);
+  const cellClipboardRef = useRef<string[][] | null>(null);
+  const cellDragRef = useRef<{ anchorRow: number; anchorCol: number } | null>(null);
+
   // Sync local state when active tab changes
   useEffect(() => {
     if (!isInitialized || !activeTab) return;
@@ -170,8 +185,15 @@ export default function NewPlan() {
     historyPointerRef.current = 0;
     setCanUndo(false);
     setCanRedo(false);
+    setCellSelection(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTabId, isInitialized]); // Only depend on activeTabId to not overwrite local changes while typing
+
+  // La seleccion de celdas se indexa por posicion dentro del dia activo — al
+  // cambiar de dia esos indices ya no significan nada, hay que limpiarla.
+  useEffect(() => {
+    setCellSelection(null);
+  }, [activeDay]);
 
   // Auto-save local state changes back to the active tab hook
   useEffect(() => {
@@ -707,6 +729,272 @@ export default function NewPlan() {
   const activeDayExercises = exercises.filter((ex) => ex.day_id === activeDay);
   const activeDayBlocks = getBlocksForActiveDay(activeDayExercises);
 
+  // Mapa fila (posicion en activeDayBlocks) -> ejercicio, solo para bloques
+  // "single". Los circuitos quedan afuera de la seleccion tipo planilla
+  // (tienen su propia UI de grupo, con series/pausa compartidas).
+  const exerciseByRowIndex = new Map<number, PlanExercise>();
+  activeDayBlocks.forEach((block, rowIndex) => {
+    if (block.type === "single") exerciseByRowIndex.set(rowIndex, block.exercise);
+  });
+
+  // Click = seleccionar la celda (como en una planilla de calculo), NO
+  // enfocar el input para editar — por eso el preventDefault incondicional.
+  // Para escribir: doble-click, o tipear directo (arranca edicion
+  // reemplazando el valor, ver handleCellTableKeyDown).
+  const handleCellMouseDown = (rowIndex: number, field: SelectableField, e: React.MouseEvent) => {
+    e.preventDefault();
+    const colIndex = SELECTABLE_FIELDS.indexOf(field);
+    if (e.shiftKey && cellSelection) {
+      setCellSelection({ ...cellSelection, focusRow: rowIndex, focusCol: colIndex });
+    } else {
+      cellDragRef.current = { anchorRow: rowIndex, anchorCol: colIndex };
+      setCellSelection({ anchorRow: rowIndex, anchorCol: colIndex, focusRow: rowIndex, focusCol: colIndex });
+    }
+    cellTableRef.current?.focus();
+  };
+
+  // Doble-click en una celda: ahi si entra en modo edicion (foco real en el
+  // input, texto pre-seleccionado para poder tipear encima).
+  const handleCellDoubleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    e.currentTarget.focus();
+    e.currentTarget.select();
+  };
+
+  // Arrastre tipo planilla de calculo: como el mousedown ya movio el foco al
+  // contenedor (no al input), no hay seleccion nativa de texto que pelear —
+  // este listener solo tiene que extender el rectangulo mientras el mouse
+  // sigue apretado. Usa elementFromPoint en vez de un listener por celda.
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const drag = cellDragRef.current;
+      if (!drag) return;
+
+      const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const cellEl = el?.closest("[data-cell-row][data-cell-field]") as HTMLElement | null;
+      if (!cellEl) return;
+
+      const row = Number(cellEl.dataset.cellRow);
+      const field = cellEl.dataset.cellField as SelectableField;
+      const col = SELECTABLE_FIELDS.indexOf(field);
+
+      setCellSelection((prev) =>
+        prev ? { anchorRow: drag.anchorRow, anchorCol: drag.anchorCol, focusRow: row, focusCol: col } : prev,
+      );
+    };
+
+    const handleMouseUp = () => {
+      cellDragRef.current = null;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  // Enfoca el input real de una celda (usado para entrar en modo edicion
+  // desde el teclado — Enter/F2, o al empezar a tipear directo).
+  const focusCellInput = (rowIndex: number, field: SelectableField) => {
+    const inputEl = document.querySelector<HTMLInputElement>(
+      `[data-cell-row="${rowIndex}"][data-cell-field="${field}"]`,
+    );
+    return inputEl;
+  };
+
+  const handleClearSelectedCells = () => {
+    if (!cellSelection) return;
+    const { minRow, maxRow, minCol, maxCol } = getSelectionBounds(cellSelection);
+
+    const idsInRange = new Set<string>();
+    for (let r = minRow; r <= maxRow; r++) {
+      const ex = exerciseByRowIndex.get(r);
+      if (ex) idsInRange.add(ex.id);
+    }
+    if (idsInRange.size === 0) return;
+
+    commitExercises((prev) =>
+      prev.map((ex) => {
+        if (!idsInRange.has(ex.id)) return ex;
+        let patch: Partial<PlanExercise> = {};
+        for (let c = minCol; c <= maxCol; c++) {
+          const update = computeFieldUpdate(ex, SELECTABLE_FIELDS[c], "");
+          if (update) patch = { ...patch, ...update };
+        }
+        return Object.keys(patch).length > 0 ? { ...ex, ...patch } : ex;
+      }),
+    );
+    toast.success("Datos borrados");
+  };
+
+  const handleCopySelectedCells = async () => {
+    if (!cellSelection) return;
+    const { minRow, maxRow, minCol, maxCol } = getSelectionBounds(cellSelection);
+
+    const matrix: string[][] = [];
+    for (let r = minRow; r <= maxRow; r++) {
+      const ex = exerciseByRowIndex.get(r);
+      const rowValues: string[] = [];
+      for (let c = minCol; c <= maxCol; c++) {
+        rowValues.push(ex ? readFieldValue(ex, SELECTABLE_FIELDS[c]) : "");
+      }
+      matrix.push(rowValues);
+    }
+    cellClipboardRef.current = matrix;
+
+    try {
+      const tsv = matrix.map((row) => row.join("\t")).join("\n");
+      await navigator.clipboard.writeText(tsv);
+    } catch {
+      // Sin permiso de escritura al portapapeles del sistema — el interno
+      // (cellClipboardRef) alcanza igual para copiar/pegar dentro de la app.
+    }
+    toast.success("Datos copiados");
+  };
+
+  const handlePasteSelectedCells = async () => {
+    if (!cellSelection) return;
+
+    let matrix: string[][] | null = null;
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        matrix = text
+          .replace(/\r/g, "")
+          .split("\n")
+          .filter((row) => row.length > 0)
+          .map((row) => row.split("\t"));
+      }
+    } catch {
+      // Sin permiso de lectura del portapapeles del sistema — se usa el
+      // ultimo bloque copiado dentro de la app (si hay).
+    }
+    if (!matrix || matrix.length === 0) matrix = cellClipboardRef.current;
+    if (!matrix || matrix.length === 0) return;
+
+    const { minRow, minCol } = getSelectionBounds(cellSelection);
+    const numCols = matrix[0].length;
+
+    const patchByExerciseId = new Map<string, Partial<PlanExercise>>();
+    for (let i = 0; i < matrix.length; i++) {
+      const ex = exerciseByRowIndex.get(minRow + i);
+      if (!ex) continue;
+      let patch = patchByExerciseId.get(ex.id) ?? {};
+      for (let j = 0; j < numCols; j++) {
+        const targetCol = minCol + j;
+        if (targetCol >= SELECTABLE_FIELDS.length) continue;
+        const update = computeFieldUpdate(ex, SELECTABLE_FIELDS[targetCol], matrix[i][j] ?? "");
+        if (update) patch = { ...patch, ...update };
+      }
+      patchByExerciseId.set(ex.id, patch);
+    }
+    if (patchByExerciseId.size === 0) return;
+
+    commitExercises((prev) =>
+      prev.map((ex) => {
+        const patch = patchByExerciseId.get(ex.id);
+        return patch && Object.keys(patch).length > 0 ? { ...ex, ...patch } : ex;
+      }),
+    );
+    toast.success("Datos pegados");
+  };
+
+  const handleCellTableKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!cellSelection) return;
+    // El evento burbujea desde cualquier input del día (Ejercicio, Notas,
+    // etc). Solo interceptamos si el foco real esta en el contenedor mismo
+    // — eso es "modo seleccionado" (click simple o arrastre, sin editar
+    // ningun input todavia). Si el usuario ya esta escribiendo en un campo
+    // (doble-click, o empezo a tipear y el foco paso al input real),
+    // e.target va a ser ese input, no el contenedor, y dejamos pasar todo
+    // nativo sin tocar nada.
+    if (e.target !== cellTableRef.current) return;
+
+    const isMeta = e.ctrlKey || e.metaKey;
+    const multi = isMultiCellSelection(cellSelection);
+
+    if (e.key === "Delete" || e.key === "Backspace") {
+      // Con 1 sola celda tambien: seleccionada (no en edicion), Supr la
+      // borra entera de una — como en cualquier planilla de calculo.
+      e.preventDefault();
+      handleClearSelectedCells();
+      return;
+    }
+    if (isMeta && e.key.toLowerCase() === "c") {
+      e.preventDefault();
+      void handleCopySelectedCells();
+      return;
+    }
+    if (isMeta && e.key.toLowerCase() === "v") {
+      e.preventDefault();
+      void handlePasteSelectedCells();
+      return;
+    }
+    if (e.key === "Escape") {
+      setCellSelection(null);
+      return;
+    }
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+      e.preventDefault();
+      const deltas: Record<string, [number, number]> = {
+        ArrowUp: [-1, 0],
+        ArrowDown: [1, 0],
+        ArrowLeft: [0, -1],
+        ArrowRight: [0, 1],
+      };
+      const [dRow, dCol] = deltas[e.key];
+      const maxRow = Math.max(0, activeDayBlocks.length - 1);
+      const nextRow = Math.min(Math.max(cellSelection.focusRow + dRow, 0), maxRow);
+      const nextCol = Math.min(Math.max(cellSelection.focusCol + dCol, 0), SELECTABLE_FIELDS.length - 1);
+      setCellSelection(
+        e.shiftKey
+          ? { ...cellSelection, focusRow: nextRow, focusCol: nextCol }
+          : { anchorRow: nextRow, anchorCol: nextCol, focusRow: nextRow, focusCol: nextCol },
+      );
+      return;
+    }
+    if (!multi && (e.key === "Enter" || e.key === "F2")) {
+      // Entra en modo edicion sin tocar el valor actual.
+      e.preventDefault();
+      focusCellInput(cellSelection.focusRow, SELECTABLE_FIELDS[cellSelection.focusCol])?.select();
+      return;
+    }
+    if (!multi && !isMeta && !e.altKey && e.key.length === 1) {
+      // Tipear un caracter con 1 sola celda seleccionada: arranca edicion
+      // reemplazando el valor (igual que en Excel/Sheets), en vez de que no
+      // pase nada porque no hay ningun input enfocado.
+      const ex = exerciseByRowIndex.get(cellSelection.focusRow);
+      if (!ex) return;
+      const field = SELECTABLE_FIELDS[cellSelection.focusCol];
+      const update = computeFieldUpdate(ex, field, e.key);
+      if (!update) return; // celda bloqueada (circuito/cardio) — no hay nada que tipear
+
+      e.preventDefault();
+      commitExercises((prev) =>
+        prev.map((item) => (item.id === ex.id ? { ...item, ...update } : item)),
+      );
+      // Foca el input real recien despues de que el nuevo valor se
+      // renderice, con el cursor al final, para que se pueda seguir
+      // tipeando de forma nativa. setTimeout (no requestAnimationFrame):
+      // no depende de que la pestaña este compositando frames activamente.
+      setTimeout(() => {
+        const inputEl = focusCellInput(cellSelection.focusRow, field);
+        if (inputEl) {
+          inputEl.focus();
+          const len = inputEl.value.length;
+          inputEl.setSelectionRange(len, len);
+        }
+      });
+    }
+  };
+
+  const handleCellTableBlur = (e: React.FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setCellSelection(null);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full overflow-hidden relative min-w-0 bg-background-light dark:bg-background-dark">
       {!isEditMode && (
@@ -951,16 +1239,28 @@ export default function NewPlan() {
             <div className="py-3 text-center border-l border-gray-100 dark:border-gray-800">
               Video
             </div>
-            <div className="py-3 text-center border-l border-gray-100 dark:border-gray-800">
+            <div
+              className="py-3 text-center border-l border-gray-100 dark:border-gray-800 cursor-help"
+              title="Click selecciona (arrastra o shift+click para varias) · Supr borra · doble-click o tipear para editar · Ctrl+C/V copia y pega"
+            >
               Series
             </div>
-            <div className="py-3 text-center border-l border-gray-100 dark:border-gray-800">
+            <div
+              className="py-3 text-center border-l border-gray-100 dark:border-gray-800 cursor-help"
+              title="Click selecciona (arrastra o shift+click para varias) · Supr borra · doble-click o tipear para editar · Ctrl+C/V copia y pega"
+            >
               Reps / Min
             </div>
-            <div className="py-3 text-center border-l border-gray-100 dark:border-gray-800">
+            <div
+              className="py-3 text-center border-l border-gray-100 dark:border-gray-800 cursor-help"
+              title="Click selecciona (arrastra o shift+click para varias) · Supr borra · doble-click o tipear para editar · Ctrl+C/V copia y pega"
+            >
               Carga (kg)
             </div>
-            <div className="py-3 text-center border-l border-gray-100 dark:border-gray-800">
+            <div
+              className="py-3 text-center border-l border-gray-100 dark:border-gray-800 cursor-help"
+              title="Click selecciona (arrastra o shift+click para varias) · Supr borra · doble-click o tipear para editar · Ctrl+C/V copia y pega"
+            >
               Pausa (s)
             </div>
             <div className="py-3 text-center border-l border-gray-100 dark:border-gray-800">
@@ -982,9 +1282,24 @@ export default function NewPlan() {
               items={activeDayBlocks.map((b) => b.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                {activeDayBlocks.map((block) => {
+              <div
+                ref={cellTableRef}
+                tabIndex={-1}
+                onKeyDown={handleCellTableKeyDown}
+                onBlur={handleCellTableBlur}
+                className="divide-y divide-gray-100 dark:divide-gray-800 outline-none"
+              >
+                {activeDayBlocks.map((block, rowIndex) => {
                   if (block.type === "single") {
+                    let selectedFields: Set<SelectableField> | undefined;
+                    if (cellSelection) {
+                      const { minRow, maxRow, minCol, maxCol } = getSelectionBounds(cellSelection);
+                      if (rowIndex >= minRow && rowIndex <= maxRow) {
+                        selectedFields = new Set(
+                          SELECTABLE_FIELDS.slice(minCol, maxCol + 1),
+                        );
+                      }
+                    }
                     return (
                       <SortableExerciseRow
                         key={block.id}
@@ -998,6 +1313,10 @@ export default function NewPlan() {
                         handleDeleteExercise={handleDeleteExercise}
                         circuitPosition="none"
                         isInsideCircuit={false}
+                        rowIndex={rowIndex}
+                        selectedFields={selectedFields}
+                        onCellMouseDown={(field, e) => handleCellMouseDown(rowIndex, field, e)}
+                        onCellDoubleClick={handleCellDoubleClick}
                       />
                     );
                   } else {
