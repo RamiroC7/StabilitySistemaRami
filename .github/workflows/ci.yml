@@ -1,0 +1,35 @@
+name: CI
+
+# Corre en cada push a main y en cada Pull Request contra main. Asi, si
+# alguien sube un cambio que rompe un test (o el build), queda marcado
+# con una X roja en GitHub ANTES de que llegue a produccion — no depende
+# de que alguien se acuerde de correr "npm run test" a mano.
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Tests + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Correr tests (Vitest)
+        run: npx vitest run
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build de produccion
+        run: npm run build
