@@ -14,6 +14,15 @@ jobs:
   test:
     name: Tests + build
     runs-on: ubuntu-latest
+    # Valores de mentira — src/lib/supabase.ts explota al importarse si no
+    # encuentra estas dos variables, y useBusinessMetrics.ts (entre otros)
+    # lo importa, aunque las funciones puras que testeamos no llamen a
+    # Supabase de verdad. El .env real con las credenciales de produccion
+    # nunca se sube al repo (por seguridad), asi que en CI no existe. Con
+    # que la variable "exista" alcanza para que el chequeo pase.
+    env:
+      VITE_SUPABASE_URL: https://ci-placeholder.supabase.co
+      VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
     steps:
       - uses: actions/checkout@v4
 
