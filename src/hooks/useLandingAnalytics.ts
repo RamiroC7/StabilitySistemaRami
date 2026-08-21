@@ -357,7 +357,6 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
       "App: Devoluciones Semanales",      // slide-feature-4
       "App: Beneficios de Comunidad",     // slide-feature-5
       "¿Quiénes Somos?",                  // slide-team-intro
-      "Equipo: Juampi Labari",            // slide-team-juampi
       "Equipo: Juan Borreda",             // slide-team-juan
       "Equipo: Agustín Ramis",            // slide-team-agustin
       "Comunidad: Intro Testimonios",     // slide-testi-intro
