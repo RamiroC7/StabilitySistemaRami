@@ -4,6 +4,11 @@ export type TimeRange = "today" | "7d" | "30d" | "all";
 
 export interface LandingKpis {
   totalViews: number;
+  // Visitantes distintos (no recargas repetidas del mismo visitante) — solo
+  // disponible con datos reales, la query ya calcula count(DISTINCT
+  // distinct_id) pero antes se descartaba. Opcional para no tener que
+  // completarlo en cada entrada de DEMO_DATA_MAP.
+  uniqueVisitors?: number;
   whatsappClicks: number;
   whatsappConversionRate: number;
   completedRegistrations: number;
@@ -250,7 +255,7 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
     if (range === "30d") dateFilter = "timestamp >= now() - INTERVAL 30 DAY";
     if (range === "all") dateFilter = "1=1";
 
-    const [eventsRes, goalsRes, barriersRes, slidesRes, audioRes] = await Promise.all([
+    const [eventsRes, goalsRes, barriersRes, slidesRes, audioRes, abandonsRes] = await Promise.all([
       queryPostHogHogQL(`SELECT event, count(), count(DISTINCT distinct_id) FROM events WHERE ${dateFilter} GROUP BY event`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'objetivo_cliente') AS o, count() FROM events WHERE event = 'registro_completado' AND ${dateFilter} GROUP BY o`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'barrera_principal') AS b, count() FROM events WHERE event = 'encuesta_respondida' AND ${dateFilter} GROUP BY b`),
@@ -259,14 +264,25 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
       // cubre los eventos viejos ya grabados en PostHog con ese nombre.
       queryPostHogHogQL(`SELECT toInt(if(JSONExtractString(properties, 'numero_slide') != '', JSONExtractString(properties, 'numero_slide'), JSONExtractString(properties, 'slide_actual'))) AS s_idx, countIf(event = 'slide_visto') AS views, countIf(event = 'historia_pausada') AS pauses FROM events WHERE event IN ('slide_visto', 'historia_pausada') AND ${dateFilter} GROUP BY s_idx ORDER BY s_idx ASC`),
       queryPostHogHogQL(`SELECT JSONExtractString(properties, 'estado_audio') AS st, count() FROM events WHERE event = 'audio_toggled' AND ${dateFilter} GROUP BY st`),
+      // slide_abandonado (se manda al esconderse la pestaña) se capturaba pero
+      // nunca se consultaba — el dropRate por slide quedaba siempre en 0.
+      queryPostHogHogQL(`SELECT toInt(JSONExtractString(properties, 'slide_final')) AS s_idx, count() AS abandons FROM events WHERE event = 'slide_abandonado' AND ${dateFilter} GROUP BY s_idx`),
     ]);
 
     const eventCounts: Record<string, number> = {};
-    eventsRes.forEach(([evt, count]) => {
-      if (typeof evt === "string") eventCounts[evt] = Number(count) || 0;
+    // La query ya trae count(DISTINCT distinct_id) como 3ra columna — antes
+    // se descartaba al desestructurar solo [evt, count], perdiendo el dato
+    // de visitantes unicos que ya se habia calculado.
+    const eventUniqueCounts: Record<string, number> = {};
+    eventsRes.forEach(([evt, count, uniqueCount]) => {
+      if (typeof evt === "string") {
+        eventCounts[evt] = Number(count) || 0;
+        eventUniqueCounts[evt] = Number(uniqueCount) || 0;
+      }
     });
 
     const totalViews = eventCounts["$pageview"] || 0;
+    const uniqueVisitors = eventUniqueCounts["$pageview"] || 0;
     const storyNextClicks = eventCounts["historia_siguiente_click"] || 0;
     const completedRegistrations = eventCounts["registro_completado"] || 0;
     const whatsappClicks = eventCounts["whatsapp_link_click"] || 0;
@@ -379,21 +395,31 @@ async function fetchRealPostHogMetrics(range: TimeRange): Promise<LandingAnalyti
       }
     });
 
+    const abandonsMap: Record<number, number> = {};
+    abandonsRes.forEach(([slideIdx, abandons]) => {
+      const idx = Number(slideIdx);
+      if (idx >= 1 && idx <= defaultSlideTitles.length) {
+        abandonsMap[idx] = Number(abandons) || 0;
+      }
+    });
+
     const slides: SlideMetric[] = defaultSlideTitles.map((title, i) => {
       const slideNum = i + 1;
       const sData = slidesMap[slideNum] || { views: 0, pauses: 0 };
+      const abandons = abandonsMap[slideNum] || 0;
       return {
         slideNumber: slideNum,
         slideTitle: title,
         views: sData.views,
         pauses: sData.pauses,
-        dropRate: 0,
+        dropRate: sData.views > 0 ? Number(((abandons / sData.views) * 100).toFixed(1)) : 0,
       };
     });
 
     return {
       kpis: {
         totalViews,
+        uniqueVisitors,
         whatsappClicks,
         whatsappConversionRate,
         completedRegistrations,
