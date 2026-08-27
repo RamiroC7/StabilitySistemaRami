@@ -33,7 +33,6 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": [
-    "src",
-    "iu/CoachDashboard.tsx"
+    "src"
   ]
 }

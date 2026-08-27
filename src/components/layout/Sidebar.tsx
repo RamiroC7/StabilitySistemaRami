@@ -5,9 +5,6 @@ import {
   Calendar,
   Dumbbell,
   BarChart2,
-  Home,
-  TrendingUp,
-  MessageSquare,
   LogOut,
   User,
   ChevronLeft,
@@ -19,19 +16,12 @@ import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import LogoutBottomSheet from "@/components/LogoutBottomSheet";
 
-const coachNavigation: { name: string; href: string; icon: LucideIcon }[] = [
+const navigation: { name: string; href: string; icon: LucideIcon }[] = [
   { name: "Alumnos", href: "/inicio", icon: Users },
   { name: "Planificador", href: "/planificador", icon: Calendar },
   { name: "Biblioteca", href: "/biblioteca", icon: Dumbbell },
   { name: "Vencimientos", href: "/asignaciones", icon: Calendar },
   { name: "Estadísticas", href: "/dashboard", icon: BarChart2 },
-];
-
-const studentNavigation: { name: string; href: string; icon: LucideIcon }[] = [
-  { name: "Mi Dashboard", href: "/", icon: Home },
-  { name: "Mi Plan", href: "/mi-plan", icon: Dumbbell },
-  { name: "Progreso", href: "/progreso", icon: TrendingUp },
-  { name: "Mensajes", href: "/mensajes", icon: MessageSquare },
 ];
 
 interface SidebarProps {
@@ -73,9 +63,6 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
       setShowLogoutSheet(false);
     }
   };
-
-  const isStudent = professor?.role === "student";
-  const navigation = isStudent ? studentNavigation : coachNavigation;
 
   const sidebarContent = (
     <div className="flex h-full flex-col">

@@ -20,7 +20,6 @@ module.exports = {
         success: "#10b981",
 
         // Additional colors from new design
-        secondary: "#1a202c",
         "card-light": "#FFFFFF",
         "card-dark": "#1E293B",
         "input-light": "#FFFFFF",
