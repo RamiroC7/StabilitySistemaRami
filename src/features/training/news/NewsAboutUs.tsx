@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Quote, Share2, Sparkles, Target, X } from "lucide-react";
 import { NOSOTROS_VISITS_KEY, registerVisit } from "@/features/training/news/newsStorageKeys";
+import { cn } from "@/lib/utils";
 
 // ─── WhatsApp icon (mismo path que CoachContactButton, para consistencia) ────
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -24,13 +25,13 @@ const TEAM: TeamMember[] = [
   {
     name: "Agus",
     role: "Entrenador Stability",
-    image: "/team-agus.webp",
+    image: "/team-agus.webp?v=2",
     wa: "https://wa.me/5493515743833?text=Hola%20Agus!%20Te%20escribo%20desde%20la%20app%20de%20Stability",
   },
   {
     name: "Juan",
     role: "Entrenador Stability",
-    image: "/team-juan.webp",
+    image: "/team-juan.webp?v=2",
     wa: "https://wa.me/5493512240889?text=Hola%20Juan!%20Te%20escribo%20desde%20la%20app%20de%20Stability",
   },
 ];
@@ -69,12 +70,14 @@ function ContactPopup({
         </div>
 
         <div className="flex items-center gap-3 mb-4">
-          <img
-            src={member.image}
-            alt={member.name}
-            loading="eager"
-            className="w-14 h-14 rounded-full object-cover object-top bg-slate-100 dark:bg-slate-700 shrink-0"
-          />
+          <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-700 shrink-0">
+            <img
+              src={member.image}
+              alt={member.name}
+              loading="eager"
+              className="w-full h-full object-cover object-top"
+            />
+          </div>
           <div>
             <p className="text-base font-bold text-slate-900 dark:text-white leading-tight">
               {member.name}
@@ -114,13 +117,15 @@ function TeamCard({
       className="group relative flex-1 flex flex-col items-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 pt-5 pb-4 px-3 shadow-sm hover:shadow-md hover:border-primary/30 active:scale-[0.98] transition-all"
     >
       <div className="relative w-24 h-24 mb-3">
-        <img
-          src={member.image}
-          alt={member.name}
-          loading="lazy"
-          decoding="async"
-          className="w-full h-full rounded-full object-cover object-top bg-slate-100 dark:bg-slate-800"
-        />
+        <div className="w-full h-full rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+          <img
+            src={member.image}
+            alt={member.name}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover object-top"
+          />
+        </div>
         {/* Badge de contacto */}
         <span className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#25D366] border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-sm group-active:scale-90 transition-transform">
           <WhatsAppIcon className="w-3.5 h-3.5 text-white" />

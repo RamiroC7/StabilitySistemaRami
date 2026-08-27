@@ -73,7 +73,7 @@ export default function TrainingCommunity() {
   // que las segundas visitas ya ni siquiera pidan red.
   useEffect(() => {
     void import("@/features/training/news/NewsAboutUs");
-    for (const src of ["/team-agus.webp", "/team-juan.webp"]) {
+    for (const src of ["/team-agus.webp?v=2", "/team-juan.webp?v=2"]) {
       const img = new Image();
       img.src = src;
     }
