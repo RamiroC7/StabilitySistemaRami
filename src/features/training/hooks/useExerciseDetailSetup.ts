@@ -20,7 +20,7 @@ interface UseExerciseDetailSetupResult {
  */
 export function useExerciseDetailSetup(): UseExerciseDetailSetupResult {
   const navigate = useNavigate();
-  const { dayId, exerciseNum } = useParams<{ dayId: string; exerciseNum: string }>();
+  const { exerciseNum } = useParams<{ dayId: string; exerciseNum: string }>();
 
   const {
     currentDay,

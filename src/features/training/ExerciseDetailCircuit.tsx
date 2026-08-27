@@ -23,7 +23,6 @@ interface ExerciseDetailCircuitProps {
   exercise: Exercise;
   circuitExercises: Exercise[];
   circuitStartIndex: number;
-  circuitEndIndex: number;
   activeRound: number;
   totalRounds: number;
   activeRoundIndex: number;
@@ -51,7 +50,6 @@ export default function ExerciseDetailCircuit({
   exercise,
   circuitExercises,
   circuitStartIndex,
-  circuitEndIndex,
   activeRound,
   totalRounds,
   activeRoundIndex,

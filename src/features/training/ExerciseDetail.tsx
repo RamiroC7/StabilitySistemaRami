@@ -38,7 +38,6 @@ export default function ExerciseDetail() {
     currentDay,
     seriesLog,
     activeRestSetIndex,
-    activeRestExerciseId,
     restTargetEndTime,
     restSecondsTotal,
     markSetDone,
@@ -131,7 +130,6 @@ export default function ExerciseDetail() {
           exercise={exercise}
           circuitExercises={circuitExercises}
           circuitStartIndex={circuitStartIndex}
-          circuitEndIndex={circuitEndIndex}
           activeRound={activeRound}
           totalRounds={totalRounds}
           activeRoundIndex={activeRoundIndex}
