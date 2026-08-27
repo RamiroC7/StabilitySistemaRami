@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useId } from "react";
 import { useStudents } from "@/hooks/useStudents";
 import type { StudentWithAssignments } from "@/hooks/useStudents";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 
 interface AssignPlanModalProps {
   isOpen: boolean;
@@ -26,6 +27,24 @@ export default function AssignPlanModal({
     new Set()
   );
   const [searchQuery, setSearchQuery] = useState("");
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const initialFocusRef = useRef<HTMLInputElement>(null);
+  const titleId = useId();
+
+  useModalFocusTrap({
+    isOpen,
+    onClose: () => {
+      if (!isSubmitting) {
+        setSelectedStudentIds(new Set());
+        setSearchQuery("");
+        onClose();
+      }
+    },
+    containerRef,
+    initialFocusRef,
+    disableEscape: isSubmitting,
+  });
 
   // Check date conflicts
   const hasDateConflict = useCallback(
@@ -89,11 +108,16 @@ export default function AssignPlanModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4"
       onClick={handleClose}
     >
       <div
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col mx-4"
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col mx-4 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -105,7 +129,7 @@ export default function AssignPlanModal({
               </span>
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              <h2 id={titleId} className="text-lg font-bold text-gray-900 dark:text-white">
                 Asignar Plan a Alumnos
               </h2>
               {planTitle && (
@@ -116,9 +140,11 @@ export default function AssignPlanModal({
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="Cerrar modal"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
@@ -131,10 +157,12 @@ export default function AssignPlanModal({
               search
             </span>
             <input
+              ref={initialFocusRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar alumno por nombre..."
+              aria-label="Buscar alumno por nombre"
               className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder-gray-400"
               disabled={isSubmitting}
             />

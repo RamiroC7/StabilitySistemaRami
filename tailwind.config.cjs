@@ -14,8 +14,8 @@ module.exports = {
         "surface-light": "#F3F4F6",
         "surface-dark": "#1e293b",
         "text-main": "#101418",
-        "text-secondary": "#5e758d",
-        "text-muted": "#5e758d",
+        "text-secondary": "#475569",
+        "text-muted": "#475569",
         "border-color": "#dae0e7",
         success: "#10b981",
 
@@ -28,7 +28,7 @@ module.exports = {
         "border-dark": "#475569",
         "text-light": "#1e293b",
         "text-dark": "#f8fafc",
-        "muted-light": "#64748b",
+        "muted-light": "#475569",
         "muted-dark": "#94a3b8",
 
         // shadcn semantic colors

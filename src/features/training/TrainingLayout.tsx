@@ -50,6 +50,14 @@ export default function TrainingLayout() {
 
   return (
     <div className="relative flex flex-col h-[100dvh] overflow-hidden bg-[#f7f9fc] dark:bg-slate-950">
+      {/* Skip Link for keyboard navigation */}
+      <a
+        href="#student-main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:font-semibold focus:rounded-xl focus:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-transform"
+      >
+        Saltar al contenido principal
+      </a>
+
       {/* Fixed Top Header */}
       {headerTitle && (
         <header className="flex items-center justify-between px-4 pb-4 pt-[calc(env(safe-area-inset-top,0px)+1rem)] bg-background-light dark:bg-background-dark border-b border-gray-100 dark:border-gray-800 shrink-0 z-50">
@@ -62,7 +70,7 @@ export default function TrainingLayout() {
       )}
 
       {/* Scrollable content */}
-      <main className="flex-1 overflow-y-auto overscroll-contain pb-28">
+      <main id="student-main-content" tabIndex={-1} className="flex-1 overflow-y-auto overscroll-contain pb-28 focus:outline-none">
         <Outlet />
       </main>
 

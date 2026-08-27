@@ -1,5 +1,7 @@
+import { useRef, useId } from "react";
 import { LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 
 interface LogoutBottomSheetProps {
   isOpen: boolean;
@@ -14,6 +16,17 @@ export default function LogoutBottomSheet({
   onConfirm,
   isLoading = false,
 }: LogoutBottomSheetProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+
+  useModalFocusTrap({
+    isOpen,
+    onClose,
+    containerRef,
+    disableEscape: isLoading,
+  });
+
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
@@ -28,7 +41,10 @@ export default function LogoutBottomSheet({
           "fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0"
         )}
-        onClick={onClose}
+        aria-hidden="true"
+        onClick={() => {
+          if (!isLoading) onClose();
+        }}
       />
 
       {/* Dialog — centrado en la pantalla */}
@@ -38,13 +54,23 @@ export default function LogoutBottomSheet({
           isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
         )}
       >
-        <div className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800">
+        <div
+          ref={containerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={descriptionId}
+          tabIndex={-1}
+          className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800"
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Content */}
           <div className="px-6 pt-6 pb-6">
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="Cerrar modal"
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
               disabled={isLoading}
             >
               <X size={20} />
@@ -59,10 +85,10 @@ export default function LogoutBottomSheet({
 
             {/* Title & Description */}
             <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+              <h3 id={titleId} className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                 ¿Cerrar Sesión?
               </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              <p id={descriptionId} className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                 Estás a punto de cerrar tu sesión. Tendrás que volver a iniciar sesión para acceder a tu cuenta.
               </p>
             </div>

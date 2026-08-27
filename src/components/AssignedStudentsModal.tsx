@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { useTrainingPlans } from "../hooks/useTrainingPlans";
 import { toast } from "sonner";
 import ConfirmActionModal from "./ConfirmActionModal";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 
 interface AssignedStudent {
   assignmentId: string;
@@ -36,6 +37,15 @@ export default function AssignedStudentsModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [unassigningId, setUnassigningId] = useState<string | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
+  useModalFocusTrap({
+    isOpen,
+    onClose,
+    containerRef,
+  });
 
   const fetchStudents = useCallback(async () => {
     if (!planId) return;
@@ -110,7 +120,7 @@ export default function AssignedStudentsModal({
         return {
           label: status,
           className:
-            "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600",
+            "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600",
         };
     }
   };
@@ -119,51 +129,58 @@ export default function AssignedStudentsModal({
 
   return (
     <>
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm"
-      onClick={onClose}
-    >
       <div
-        className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[85vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4"
+        onClick={onClose}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-primary text-xl">
-                group
-              </span>
-            </div>
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white truncate">
-                Alumnos Asignados
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                {planTitle}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <span className="material-symbols-outlined text-3xl text-primary animate-spin block mb-2">
-                  progress_activity
+        <div
+          ref={containerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
+          className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-primary text-xl">
+                  group
                 </span>
-                <p className="text-sm text-gray-500">Cargando alumnos...</p>
+              </div>
+              <div className="min-w-0">
+                <h2 id={titleId} className="text-lg font-bold text-gray-900 dark:text-white truncate">
+                  Alumnos Asignados
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  {planTitle}
+                </p>
               </div>
             </div>
-          )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar modal"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <span className="material-symbols-outlined text-3xl text-primary animate-spin block mb-2">
+                    progress_activity
+                  </span>
+                  <p className="text-sm text-gray-500">Cargando alumnos...</p>
+                </div>
+              </div>
+            )}
 
           {error && !loading && (
             <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">

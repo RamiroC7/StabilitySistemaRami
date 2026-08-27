@@ -16,6 +16,14 @@ export default function MainLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background font-sans text-foreground antialiased">
+      {/* Skip Link for keyboard navigation */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[9999] focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:font-semibold focus:rounded-xl focus:shadow-2xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-transform"
+      >
+        Saltar al contenido principal
+      </a>
+
       {/* Mobile backdrop overlay */}
       {sidebarOpen && (
         <div
@@ -29,7 +37,7 @@ export default function MainLayout() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main content column */}
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col overflow-hidden min-w-0 focus:outline-none">
         {/* Mobile top header — hidden on desktop */}
         <header className="flex items-center gap-3 px-4 min-h-[4rem] py-2 pt-[max(env(safe-area-inset-top),1rem)] border-b bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm lg:hidden shrink-0 z-30 relative">
           <button

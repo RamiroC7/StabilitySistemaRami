@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useId } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import type { WorkoutCompletion } from "@/hooks/useWorkoutCompletions";
 import { Loader2, Trash2, X, Clock, Flame, Smile } from "lucide-react";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 
 interface WorkoutDayDetailProps {
   completion: WorkoutCompletion;
@@ -54,6 +55,16 @@ export default function WorkoutDayDetail({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
+  useModalFocusTrap({
+    isOpen: true,
+    onClose,
+    containerRef,
+    disableEscape: isDeleting,
+  });
+
   useEffect(() => {
     let cancelled = false;
 
@@ -94,36 +105,54 @@ export default function WorkoutDayDetail({
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    const result = await deleteCompletion(completion.id);
-    setIsDeleting(false);
-    if (result.success) {
-      toast.success("Entrenamiento eliminado");
-      onDeleted();
-    } else {
-      toast.error(result.error ?? "No se pudo eliminar. Intenta de nuevo.");
+    try {
+      const result = await deleteCompletion(completion.id);
+      if (result.success) {
+        toast.success("Entrenamiento eliminado");
+        onDeleted();
+        onClose();
+      } else {
+        toast.error(result.error || "Error al eliminar");
+      }
+    } catch {
+      toast.error("Error al eliminar el entrenamiento");
+    } finally {
+      setIsDeleting(false);
       setConfirmingDelete(false);
     }
   };
 
   const dayLabel =
     exerciseLogs[0]?.plan_day_name || `Día ${completion.dayNumber}`;
+
   const dateLabel = new Date(completion.completedAt).toLocaleDateString(
     "es-AR",
-    { weekday: "long", day: "numeric", month: "long" },
+    { weekday: "long", day: "numeric", month: "long" }
   );
 
   return (
     <>
       <div
         className="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm"
+        aria-hidden="true"
         onClick={() => !isDeleting && onClose()}
       />
       <div className="fixed inset-0 z-[101] flex items-center justify-center px-4">
-        <div className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 px-6 pt-6 pb-6">
+        <div
+          ref={containerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
+          className="relative w-full max-w-sm max-h-[85vh] overflow-y-auto bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 px-6 pt-6 pb-6 animate-in fade-in zoom-in-95 duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
+            type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Cerrar modal"
+            className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <X size={20} />
           </button>
@@ -132,7 +161,7 @@ export default function WorkoutDayDetail({
             <>
               {/* ── Header ── */}
               <div className="mb-5 pr-8">
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                <h3 id={titleId} className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
                   {dayLabel}
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 capitalize">

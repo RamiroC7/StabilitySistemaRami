@@ -1,5 +1,7 @@
+import { useRef, useId } from "react";
 import { X, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 
 interface ConfirmActionModalProps {
     isOpen: boolean;
@@ -20,19 +22,39 @@ export default function ConfirmActionModal({
     confirmText = "Eliminar",
     variant = "danger",
 }: ConfirmActionModalProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const titleId = useId();
+    const descriptionId = useId();
+
+    useModalFocusTrap({
+        isOpen,
+        onClose,
+        containerRef,
+    });
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
             <div
-                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+                className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+                aria-hidden="true"
                 onClick={onClose}
             />
 
-            <div className={cn(
-                "relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-6 text-left align-middle shadow-2xl transition-all border border-slate-200 dark:border-slate-800",
-                "animate-in fade-in zoom-in duration-200"
-            )}>
+            <div
+                ref={containerRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                aria-describedby={descriptionId}
+                tabIndex={-1}
+                className={cn(
+                    "relative w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-slate-900 p-6 text-left align-middle shadow-2xl transition-all border border-slate-200 dark:border-slate-800",
+                    "animate-in fade-in zoom-in duration-200"
+                )}
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="flex items-center gap-3 mb-4">
                     <div className={cn(
                         "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
@@ -43,19 +65,20 @@ export default function ConfirmActionModal({
                             variant === "danger" ? "text-red-600 dark:text-red-400" : "text-blue-600 dark:text-blue-400"
                         )} aria-hidden="true" />
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+                    <h3 id={titleId} className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
                         {title}
                     </h3>
                     <button
                         onClick={onClose}
-                        className="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        aria-label="Cerrar modal"
+                        className="ml-auto rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                         <X size={20} />
                     </button>
                 </div>
 
                 <div className="mt-2">
-                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <p id={descriptionId} className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                         {description}
                     </p>
                 </div>

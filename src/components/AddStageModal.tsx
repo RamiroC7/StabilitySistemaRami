@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef, useId } from 'react';
+import { useModalFocusTrap } from '@/components/ui/Modal';
 
 interface AddStageModalProps {
     isOpen: boolean;
@@ -20,6 +21,25 @@ export default function AddStageModal({ isOpen, onClose, onAdd }: AddStageModalP
     const [color, setColor] = useState('#3B82F6');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const initialFocusRef = useRef<HTMLInputElement>(null);
+    const titleId = useId();
+
+    useModalFocusTrap({
+        isOpen,
+        onClose: () => {
+            if (!isSubmitting) {
+                setName('');
+                setColor('#3B82F6');
+                setError('');
+                onClose();
+            }
+        },
+        containerRef,
+        initialFocusRef,
+        disableEscape: isSubmitting,
+    });
 
     if (!isOpen) return null;
 
@@ -57,14 +77,24 @@ export default function AddStageModal({ isOpen, onClose, onAdd }: AddStageModalP
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleClose}>
-            <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleClose}>
+            <div
+                ref={containerRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                tabIndex={-1}
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Agregar Nueva Etapa</h2>
+                    <h2 id={titleId} className="text-xl font-bold text-gray-900 dark:text-white">Agregar Nueva Etapa</h2>
                     <button
+                        type="button"
                         onClick={handleClose}
                         disabled={isSubmitting}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                        aria-label="Cerrar modal"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -72,10 +102,12 @@ export default function AddStageModal({ isOpen, onClose, onAdd }: AddStageModalP
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label htmlFor="stage-name-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Nombre de la Etapa
                         </label>
                         <input
+                            ref={initialFocusRef}
+                            id="stage-name-input"
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
@@ -101,6 +133,7 @@ export default function AddStageModal({ isOpen, onClose, onAdd }: AddStageModalP
                                         }`}
                                     style={{ backgroundColor: preset.value }}
                                     title={preset.name}
+                                    aria-label={`Color ${preset.name}`}
                                     disabled={isSubmitting}
                                 />
                             ))}

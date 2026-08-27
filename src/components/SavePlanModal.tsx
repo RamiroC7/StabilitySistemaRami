@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { supabase } from "@/lib/supabase";
 import PlanPreview from "../features/library/PlanPreview";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 
 interface SavePlanModalProps {
   isOpen: boolean;
@@ -38,6 +39,24 @@ export default function SavePlanModal({
   const [conflictPlanId, setConflictPlanId] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const initialFocusRef = useRef<HTMLInputElement>(null);
+  const titleId = useId();
+
+  useModalFocusTrap({
+    isOpen,
+    onClose: () => {
+      if (!isSubmitting && !isValidating) {
+        setNameError("");
+        setConflictPlanId(null);
+        onClose();
+      }
+    },
+    containerRef,
+    initialFocusRef,
+    disableEscape: isSubmitting || isValidating,
+  });
 
   // Reset form when modal opens
   useEffect(() => {
@@ -117,11 +136,16 @@ export default function SavePlanModal({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4"
         onClick={handleClose}
       >
         <div
-          className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden"
+          ref={containerRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
+          className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -133,7 +157,7 @@ export default function SavePlanModal({
                 </span>
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                <h2 id={titleId} className="text-lg font-bold text-gray-900 dark:text-white">
                   Guardar en Biblioteca
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -142,9 +166,11 @@ export default function SavePlanModal({
               </div>
             </div>
             <button
+              type="button"
               onClick={handleClose}
               disabled={isSubmitting || isValidating}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+              aria-label="Cerrar modal"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <span className="material-symbols-outlined">close</span>
             </button>

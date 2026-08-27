@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Quote, Share2, Sparkles, Target, X } from "lucide-react";
 import { NOSOTROS_VISITS_KEY, registerVisit } from "@/features/training/news/newsStorageKeys";
-import { cn } from "@/lib/utils";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 
 // ─── WhatsApp icon (mismo path que CoachContactButton, para consistencia) ────
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -44,15 +44,25 @@ function ContactPopup({
   member: TeamMember;
   onClose: () => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useModalFocusTrap({
+    isOpen: true,
+    onClose,
+    containerRef,
+  });
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-4"
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Contactar a ${member.name}`}
     >
       <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Contactar a ${member.name}`}
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
         className="w-full sm:w-80 bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 p-5 animate-in fade-in zoom-in-95 duration-200"
       >
@@ -61,9 +71,10 @@ function ContactPopup({
             Contacto directo
           </span>
           <button
+            type="button"
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-            aria-label="Cerrar"
+            className="w-7 h-7 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
+            aria-label="Cerrar modal"
           >
             <X size={16} />
           </button>

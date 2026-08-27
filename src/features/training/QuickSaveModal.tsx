@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useId } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { X, Loader2, Save } from "lucide-react";
@@ -7,6 +7,7 @@ import { useAuthStore } from "@/features/auth/store/authStore";
 import { useTrainingStore } from "@/features/training/store/trainingStore";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 import type { WorkoutDay, SeriesLog } from "@/features/training/types";
 import type { WorkoutMood } from "@/features/training/store/trainingStore";
 
@@ -79,6 +80,16 @@ export function QuickSaveModal({
   const [mood, setMood] = useState<WorkoutMood | null>(null);
   const [moodComment, setMoodComment] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
+  useModalFocusTrap({
+    isOpen,
+    onClose,
+    containerRef,
+    disableEscape: isSaving,
+  });
 
   if (!isOpen) return null;
 
@@ -201,21 +212,32 @@ export function QuickSaveModal({
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        aria-hidden="true"
+        onClick={() => {
+          if (!isSaving) onClose();
+        }}
       />
 
       {/* Bottom sheet panel */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain">
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl shadow-2xl max-h-[90dvh] overflow-y-auto overscroll-contain animate-in slide-in-from-bottom duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-1" aria-hidden="true">
           <div className="w-10 h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
         </div>
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-2 pb-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10">
           <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+            <h2 id={titleId} className="text-base font-bold text-slate-900 dark:text-white">
               Registrar sensaciones
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -223,8 +245,11 @@ export function QuickSaveModal({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            disabled={isSaving}
+            aria-label="Cerrar modal"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <X size={16} className="text-slate-500" />
           </button>

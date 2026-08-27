@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useId } from "react";
 import { createPortal } from "react-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +8,7 @@ import { useAuthStore } from "@/features/auth/store/authStore";
 import { useCategories } from "@/hooks/useCategories";
 import { toast } from "sonner";
 import type { LibraryExercise } from "@/features/training/store/trainingStore";
+import { useModalFocusTrap } from "@/components/ui/Modal";
 
 const exerciseSchema = z.object({
     name: z.string().min(1, "El nombre del ejercicio es requerido"),
@@ -35,6 +36,19 @@ export default function CreateExerciseModal({
 }: CreateExerciseModalProps) {
     const { professor } = useAuthStore();
     const { categories, isLoading: isLoadingCats } = useCategories();
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const titleId = useId();
+
+    useModalFocusTrap({
+        isOpen,
+        onClose: () => {
+            reset();
+            onClose();
+        },
+        containerRef,
+        disableEscape: false,
+    });
 
     const {
         register,
@@ -101,15 +115,19 @@ export default function CreateExerciseModal({
     };
 
     if (!isOpen) return null;
-
     if (typeof document === 'undefined') return null;
 
     return createPortal(
         <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999999] backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[999999] backdrop-blur-sm p-4"
             onClick={onClose}
         >
             <div
+                ref={containerRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={titleId}
+                tabIndex={-1}
                 className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -122,7 +140,7 @@ export default function CreateExerciseModal({
                             </span>
                         </div>
                         <div>
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                            <h2 id={titleId} className="text-lg font-bold text-gray-900 dark:text-white">
                                 Crear nuevo ejercicio
                             </h2>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -131,9 +149,11 @@ export default function CreateExerciseModal({
                         </div>
                     </div>
                     <button
+                        type="button"
                         onClick={onClose}
                         disabled={isSubmitting}
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                        aria-label="Cerrar modal"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                         <span className="material-symbols-outlined">close</span>
                     </button>
