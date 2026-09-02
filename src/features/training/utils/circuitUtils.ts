@@ -1,3 +1,5 @@
+import type { NavigateFunction } from "react-router-dom";
+import { toast } from "sonner";
 import type { Exercise, SeriesLog } from "@/features/training/types";
 
 // ─── Key helpers ──────────────────────────────────────────────────────────────
@@ -114,4 +116,66 @@ export function isBetweenExercisesInCircuit(
   return circuitExercises.some(
     (cEx) => seriesLog[buildSeriesKey(cEx.id, activeRoundIndex)]?.done
   );
+}
+
+// ─── Inline handler builder (used by the ExerciseDetail orchestrator) ──────────
+
+/**
+ * Returns the `handleCompleteCircuitSet` callback.
+ * Lives here (not in ExerciseDetailCircuit.tsx) so that component file only
+ * exports a component — react-refresh/only-export-components.
+ */
+export function buildCompleteCircuitSetHandler({
+  exerciseId,
+  exerciseRestSeconds,
+  activeRoundIndex,
+  totalRounds,
+  paramIndex,
+  circuitEndIndex,
+  circuitStartIndex,
+  dayId,
+  markSetDone,
+  startRestTimer,
+  stopRestTimer,
+  navigate,
+}: {
+  exerciseId: string | number;
+  exerciseRestSeconds: number;
+  activeRoundIndex: number;
+  totalRounds: number;
+  paramIndex: number;
+  circuitEndIndex: number;
+  circuitStartIndex: number;
+  dayId: string | undefined;
+  markSetDone: (key: string) => void;
+  startRestTimer: (seconds: number, setIndex: number, exerciseId?: string) => void;
+  stopRestTimer: () => void;
+  navigate: NavigateFunction;
+}) {
+  return () => {
+    const key = buildSeriesKey(exerciseId, activeRoundIndex);
+    markSetDone(key);
+
+    const isLastExerciseInCircuit = paramIndex === circuitEndIndex;
+
+    if (exerciseRestSeconds > 0) {
+      startRestTimer(exerciseRestSeconds, activeRoundIndex, String(exerciseId));
+    } else {
+      stopRestTimer();
+    }
+
+    if (!isLastExerciseInCircuit) {
+      navigate(`/entrenamiento/dia/${dayId}/ejercicio/${paramIndex + 2}`, {
+        replace: true,
+      });
+    } else {
+      if (activeRoundIndex + 1 < totalRounds) {
+        navigate(`/entrenamiento/dia/${dayId}/ejercicio/${circuitStartIndex + 1}`, {
+          replace: true,
+        });
+      } else {
+        toast.success("¡Circuito completado!");
+      }
+    }
+  };
 }

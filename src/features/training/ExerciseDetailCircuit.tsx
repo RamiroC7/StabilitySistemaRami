@@ -12,7 +12,6 @@ import {
   Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import RestTimer from "@/features/training/components/RestTimer";
 import { buildSeriesKey, formatCarga } from "@/features/training/utils/circuitUtils";
 import CoachContactButton from "@/features/training/CoachContactButton";
@@ -374,65 +373,4 @@ export default function ExerciseDetailCircuit({
       <CoachContactButton />
     </div>
   );
-}
-
-// ─── Inline handler builder (used by the parent orchestrator) ─────────────────
-
-/**
- * Returns the `handleCompleteCircuitSet` callback.
- * Exported so ExerciseDetail (the orchestrator) can build it with full context.
- */
-export function buildCompleteCircuitSetHandler({
-  exerciseId,
-  exerciseRestSeconds,
-  activeRoundIndex,
-  totalRounds,
-  paramIndex,
-  circuitEndIndex,
-  circuitStartIndex,
-  dayId,
-  markSetDone,
-  startRestTimer,
-  stopRestTimer,
-  navigate,
-}: {
-  exerciseId: string | number;
-  exerciseRestSeconds: number;
-  activeRoundIndex: number;
-  totalRounds: number;
-  paramIndex: number;
-  circuitEndIndex: number;
-  circuitStartIndex: number;
-  dayId: string | undefined;
-  markSetDone: (key: string) => void;
-  startRestTimer: (seconds: number, setIndex: number, exerciseId?: string) => void;
-  stopRestTimer: () => void;
-  navigate: ReturnType<typeof useNavigate>;
-}) {
-  return () => {
-    const key = buildSeriesKey(exerciseId, activeRoundIndex);
-    markSetDone(key);
-
-    const isLastExerciseInCircuit = paramIndex === circuitEndIndex;
-
-    if (exerciseRestSeconds > 0) {
-      startRestTimer(exerciseRestSeconds, activeRoundIndex, String(exerciseId));
-    } else {
-      stopRestTimer();
-    }
-
-    if (!isLastExerciseInCircuit) {
-      navigate(`/entrenamiento/dia/${dayId}/ejercicio/${paramIndex + 2}`, {
-        replace: true,
-      });
-    } else {
-      if (activeRoundIndex + 1 < totalRounds) {
-        navigate(`/entrenamiento/dia/${dayId}/ejercicio/${circuitStartIndex + 1}`, {
-          replace: true,
-        });
-      } else {
-        toast.success("¡Circuito completado!");
-      }
-    }
-  };
 }
