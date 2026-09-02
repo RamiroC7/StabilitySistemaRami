@@ -76,13 +76,15 @@ npm run build         # tsc -> build/
 
 ### Verificar con el Inspector (CLI)
 
-El comando + args del server van **antes** de `--method` (así los parsea el CLI del
-Inspector). `src/stdio.ts` carga `.env` del cwd solo (`src/load-env.ts`).
+El Inspector **no se instala** como dependencia (arrastra un árbol enorme de Vite/React).
+Se usa por `npx` on-demand — el script `npm run inspect` ya lo hace. El comando + args
+del server van **antes** de `--method`. `src/stdio.ts` carga `packages/mcp-server/.env`
+resuelto relativo al paquete (`src/load-env.ts`), así que corre igual desde la raíz del
+repo o desde el dir del paquete.
 
 ```bash
-cd packages/mcp-server
-npx @modelcontextprotocol/inspector --cli tsx src/stdio.ts --method tools/list
-npx @modelcontextprotocol/inspector --cli tsx src/stdio.ts \
+npx @modelcontextprotocol/inspector@2 --cli tsx packages/mcp-server/src/stdio.ts --method tools/list
+npx @modelcontextprotocol/inspector@2 --cli tsx packages/mcp-server/src/stdio.ts \
   --method tools/call --tool-name list_plans --tool-arg include_templates=false
 ```
 
@@ -140,7 +142,7 @@ Cualquier fallo → un único error `"No autorizado"` (US-7).
 packages/mcp-server/
 ├─ src/
 │  ├─ stdio.ts          # entrypoint: serveStdio(createServer) + SIGINT/SIGTERM
-│  ├─ load-env.ts       # carga .env del cwd (process.loadEnvFile), zero-dep
+│  ├─ load-env.ts       # carga packages/mcp-server/.env (process.loadEnvFile), zero-dep
 │  ├─ create-server.ts  # factory createServer() -> McpServer  (seam de auth acá)
 │  ├─ db.ts             # pg.Pool a nivel módulo + query<T>() + closePool()
 │  ├─ rows.ts           # tipos de fila angostos de las 7 tablas

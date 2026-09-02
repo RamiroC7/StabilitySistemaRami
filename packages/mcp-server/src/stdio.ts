@@ -7,9 +7,10 @@
  * Entrypoint del transport stdio. Lo levanta Claude Desktop (T15) pasando
  * `DATABASE_URL` y `MCP_ACCESS_TOKEN` por env.
  *
- * En local, `npm run dev:stdio` / `npm run inspect` cargan `.env` del cwd
- * (`./load-env.js`, que usa `process.loadEnvFile`). No hay dependencia de dotenv.
- * Este import va PRIMERO: puebla `process.env` antes de que `db.ts` lo lea.
+ * En local, `npm run dev:stdio` / `npm run inspect` cargan `packages/mcp-server/.env`
+ * (`./load-env.js`, que resuelve la ruta relativa a este paquete y usa
+ * `process.loadEnvFile`). No hay dependencia de dotenv. Este import va PRIMERO:
+ * puebla `process.env` antes de que `db.ts` lo lea.
  */
 import "./load-env.js";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
