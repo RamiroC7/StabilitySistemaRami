@@ -34,6 +34,9 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Node-safe gate (@stability/domain)
+        run: npm run check:node-safe
+
       - name: Correr tests (Vitest)
         run: npx vitest run
 
