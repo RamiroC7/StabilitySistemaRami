@@ -45,7 +45,8 @@ Milestones de check-in con el usuario:
 > queda ARCHIVADO — repo equivocado y estructura distinta (movía la app a `apps/web/`).
 > Lo reutilizable: `check-node-safe.mjs`, la lección del lockfile, el contenido de `tsconfig.base.json`.
 
-- [ ] **T1 — Convertir la raíz en workspace root SIN mover la app**
+- [x] **T1 — Convertir la raíz en workspace root SIN mover la app** — 2026-09-02
+  Resultado: `package.json` raíz con `"workspaces": ["packages/*"]` (app sin renombrar, scripts/deps intactos); `tsconfig.base.json` nuevo (no lo extienden los tsconfig de la app). `npm install` regeneró el lock en formato workspaces sin subir ninguna versión (`@supabase/supabase-js` sigue 2.95.3, `date-fns` 4.1.0). Paridad vs `upstream/main`: `npm run build` 3665 módulos / 58 chunks JS idéntico, `npx vitest run` 5 files / 23 tests (igual), `npm run lint` mismos 1 error + 1 warning preexistentes.
   Satisfies: US-9
   Trabajar en rama nueva desde `RamiroC7/StabilitySistemaRami@main`: `mcp-server/setup`.
   - `package.json` de la raíz: agregar `"workspaces": ["packages/*"]`. NO renombrar el paquete, NO tocar sus scripts/deps. La app sigue siendo el paquete raíz.
@@ -54,7 +55,8 @@ Milestones de check-in con el usuario:
   - `npm install` en la raíz (regenera `package-lock.json` en formato workspace). **Verificar que las versiones no salten** — sembrar del lock existente si `npm` quiere subir `@supabase/supabase-js` u otras (lección de la Fase 1 anterior: 2.95.3 → 2.112.4 rompía `tsc`).
   Criterio: `npm install` OK; `npm run build`, `npm run test` (Vitest), `npm run lint` dan **exactamente** el mismo resultado que en `main` sin el cambio (comparar salidas).
 
-- [ ] **T2 — Confirmar que Vercel sigue buildeando igual**
+- [x] **T2 — Confirmar que Vercel sigue buildeando igual** — 2026-09-02
+  Resultado: `vercel.json` sin cambios (rewrites SPA + headers de cache). La app no se movió → Vercel sigue infiriendo framework Vite, `dist/` como output y `npm install` como install. `vercel` CLI no disponible localmente (sin red para bajarlo); el preview real se verifica tras el push. Relevamiento + checklist del primer preview en `specs/mcp-server/notes-vercel.md`.
   Satisfies: US-9
   Depends on: T1
   - Como la app NO se movió y sigue siendo el paquete raíz, `vercel.json` y la config del dashboard **no deberían necesitar cambios**. Verificar el `vercel.json` actual (tiene `rewrites` SPA con exclusión de `/api/` y `headers` de cache — no tocar).
@@ -62,7 +64,8 @@ Milestones de check-in con el usuario:
   - El preview real se verifica cuando la rama esté en el repo de Ramiro (requiere ser colaborador). Hasta entonces, `npx vercel build` local si se puede.
   Criterio: preview de Vercel de la rama carga idéntico a producción, incluida una ruta profunda + refresh y `/api/posthog-query`.
 
-- [ ] **T3 — `packages/domain` (placeholder) + extender el `ci.yml` existente**
+- [x] **T3 — `packages/domain` (placeholder) + extender el `ci.yml` existente** — 2026-09-02
+  Resultado: `packages/domain` (`@stability/domain`, dep `date-fns ^4.1.0`, `tsconfig.json` extends `tsconfig.base.json` con `node16`/`lib ES2022` sin DOM/`types []`, `src/index.ts` placeholder + test, `scripts/check-node-safe.mjs`). Script raíz `check:node-safe`. `ci.yml` extendido con el step "Node-safe gate (@stability/domain)" entre `npm ci` y el build (ningún otro step tocado, sin workflow nuevo). `npx vitest run` toma los tests de `packages/*` con el include por defecto → 6 files / 24 tests (+1 vs upstream = el placeholder), los tests de la app siguen corriendo. `npm run check:node-safe` pasa. No hizo falta `vitest.workspace.ts`.
   Satisfies: US-9 (base para US-2, US-5)
   Depends on: T1
   - `packages/domain/`: `package.json` (`@stability/domain`, `type: module`, dep `date-fns` en la misma versión que la app), `tsconfig.json` (`extends ../../tsconfig.base.json`, `module`/`moduleResolution` `node16`, `lib: ["ES2022"]` sin DOM, `types: []`), `src/index.ts` placeholder.
