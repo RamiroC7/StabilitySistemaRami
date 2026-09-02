@@ -1,0 +1,15 @@
+{
+  "name": "@stability/domain",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0"
+  },
+  "scripts": {
+    "check:node-safe": "node ./scripts/check-node-safe.mjs"
+  }
+}

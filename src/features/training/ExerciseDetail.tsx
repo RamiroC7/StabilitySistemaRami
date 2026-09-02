@@ -8,10 +8,9 @@ import {
   getCircuitRoundState,
   isBetweenExercisesInCircuit,
   buildSeriesKey,
-} from "@/features/training/utils/circuitUtils";
-import ExerciseDetailCircuit, {
   buildCompleteCircuitSetHandler,
-} from "@/features/training/ExerciseDetailCircuit";
+} from "@/features/training/utils/circuitUtils";
+import ExerciseDetailCircuit from "@/features/training/ExerciseDetailCircuit";
 import ExerciseDetailSingle from "@/features/training/ExerciseDetailSingle";
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────

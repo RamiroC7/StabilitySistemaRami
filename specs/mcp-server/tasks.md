@@ -1,0 +1,220 @@
+# Tasks: MCP Server para Sistema Alfa
+
+**Status:** In progress — Fase 1 re-planificada para el repo real
+**Last updated:** 2026-09-02
+**Aprobado por:** Máximo — 2026-08-30 (Fases 0/2-6); Fase 1 revisada pendiente de re-aprobación
+**Design:** [design.md](./design.md)
+
+Ordenadas por dependencia. Se marcan `- [x]` a medida que se completan.
+
+> **Cambio de repo (2026-09-02):** el trabajo previo se hizo contra `MaximoFini/StabilitySistema`,
+> que no es el repo real. El repo real es `RamiroC7/StabilitySistemaRami` (app en la raíz, ya con
+> `ci.yml` + Vitest + `api/`). **T1–T3 se rehacen** con la app SIN mover. Todo lo de Fase 0 sigue
+> válido (mismo proyecto Supabase). Rutas en este doc son relativas a la raíz del repo real.
+> El trabajo se entrega como **PR a `RamiroC7/StabilitySistemaRami`**; Ramiro mergea a main.
+
+Milestones de check-in con el usuario:
+- **M1** = después de T3 (workspace armado, app buildea y deploya igual).
+- **M2** = después de T9 (server responde el primer tool desde MCP Inspector).
+- **M3** = después de T14 (los 8 tools andando desde Claude Desktop).
+
+---
+
+## Fase 0 — Verificaciones que destraban el resto
+
+- [x] **T0.1 — Verificar capacidades de rol en Supabase** — 2026-08-30
+  Satisfies: US-8 (habilita D-2)
+  Resultado: `postgres` tiene `rolcreaterole = true` y `rolbypassrls = true` (`rolsuper = false`). Puede crear roles y otorgar `BYPASSRLS`. `supabase_admin` es el superuser.
+  El probe DDL directo no se pudo correr: el `execute_sql` del conector corre en transacción read-only (`cannot execute CREATE ROLE in a read-only transaction`). Se folda la verificación en T4: `apply_migration` es transaccional, así que si `CREATE ROLE` fallara, toda la migración hace rollback y nos enteramos sin dejar estado a medias. Confianza alta (Supabase documenta roles custom vía SQL).
+  No hace falta partir T4.
+
+- [x] **T0.2 — Verificar extensión `unaccent`** — 2026-08-30
+  Satisfies: US-3
+  Resultado: `unaccent` NO está instalada pero SÍ está disponible (`pg_available_extensions`, v1.1). La migración T4 incluye `create extension if not exists unaccent with schema extensions;`. Alternativas disponibles si hicieran falta: `pg_trgm`, `fuzzystrmatch`, `citext`. `pgcrypto` ya está instalada en el schema `extensions`.
+
+- [x] **T0.3 — Leer y documentar el cálculo de adherencia actual de la app** — 2026-08-30
+  Satisfies: US-2
+  Resultado en `specs/mcp-server/notes-adherence.md`. **Hallazgo:** la app NO tiene cálculo de adherencia por-alumno-por-rango. El único % por alumno (`WorkoutCalendar.calculateWeekAttendance`) es solo semana actual, denominador bugueado (`total_days` como días/semana), numerador sin dedup, ~3h de skew de TZ. Segundo cálculo distinto en `useBusinessMetrics` (agregado mensual).
+  Decisión con el usuario: US-2 usa **fórmula propia correcta** + datos crudos, NO replica la app. requirements.md US-2 y design.md §Key flows reescritos. El bug de la app va a un spec aparte.
+
+---
+
+## Fase 1 — Workspace (sin cambio visible; US-9)
+
+> El trabajo previo (T1–T3 sobre `MaximoFini/StabilitySistema`, rama `mcp-server/phase-1-monorepo`)
+> queda ARCHIVADO — repo equivocado y estructura distinta (movía la app a `apps/web/`).
+> Lo reutilizable: `check-node-safe.mjs`, la lección del lockfile, el contenido de `tsconfig.base.json`.
+
+- [x] **T1 — Convertir la raíz en workspace root SIN mover la app** — 2026-09-02
+  Resultado: `package.json` raíz con `"workspaces": ["packages/*"]` (app sin renombrar, scripts/deps intactos); `tsconfig.base.json` nuevo (no lo extienden los tsconfig de la app). `npm install` regeneró el lock en formato workspaces sin subir ninguna versión (`@supabase/supabase-js` sigue 2.95.3, `date-fns` 4.1.0). Paridad vs `upstream/main`: `npm run build` 3665 módulos / 58 chunks JS idéntico, `npx vitest run` 5 files / 23 tests (igual), `npm run lint` mismos 1 error + 1 warning preexistentes.
+  Satisfies: US-9
+  Trabajar en rama nueva desde `RamiroC7/StabilitySistemaRami@main`: `mcp-server/setup`.
+  - `package.json` de la raíz: agregar `"workspaces": ["packages/*"]`. NO renombrar el paquete, NO tocar sus scripts/deps. La app sigue siendo el paquete raíz.
+  - `tsconfig.base.json` nuevo en la raíz con los `compilerOptions` comunes (extraídos de `tsconfig.app.json`/`tsconfig.node.json`, sin romper sus overrides de Vite/React).
+  - NADA se mueve. `src/`, `api/`, `index.html`, `vite.config.ts`, `vitest.setup.ts`, `vercel.json` quedan como están.
+  - `npm install` en la raíz (regenera `package-lock.json` en formato workspace). **Verificar que las versiones no salten** — sembrar del lock existente si `npm` quiere subir `@supabase/supabase-js` u otras (lección de la Fase 1 anterior: 2.95.3 → 2.112.4 rompía `tsc`).
+  Criterio: `npm install` OK; `npm run build`, `npm run test` (Vitest), `npm run lint` dan **exactamente** el mismo resultado que en `main` sin el cambio (comparar salidas).
+
+- [x] **T2 — Confirmar que Vercel sigue buildeando igual** — 2026-09-02
+  Resultado: `vercel.json` sin cambios (rewrites SPA + headers de cache). La app no se movió → Vercel sigue infiriendo framework Vite, `dist/` como output y `npm install` como install. `vercel` CLI no disponible localmente (sin red para bajarlo); el preview real se verifica tras el push. Relevamiento + checklist del primer preview en `specs/mcp-server/notes-vercel.md`.
+  Satisfies: US-9
+  Depends on: T1
+  - Como la app NO se movió y sigue siendo el paquete raíz, `vercel.json` y la config del dashboard **no deberían necesitar cambios**. Verificar el `vercel.json` actual (tiene `rewrites` SPA con exclusión de `/api/` y `headers` de cache — no tocar).
+  - Único riesgo: que Vercel detecte el `"workspaces"` y cambie su heurística de install/build. Documentar qué mirar en el primer preview: que `npm install` no falle y que `dist/` salga igual.
+  - El preview real se verifica cuando la rama esté en el repo de Ramiro (requiere ser colaborador). Hasta entonces, `npx vercel build` local si se puede.
+  Criterio: preview de Vercel de la rama carga idéntico a producción, incluida una ruta profunda + refresh y `/api/posthog-query`.
+
+- [x] **T3 — `packages/domain` (placeholder) + extender el `ci.yml` existente** — 2026-09-02
+  Resultado: `packages/domain` (`@stability/domain`, dep `date-fns ^4.1.0`, `tsconfig.json` extends `tsconfig.base.json` con `node16`/`lib ES2022` sin DOM/`types []`, `src/index.ts` placeholder + test, `scripts/check-node-safe.mjs`). Script raíz `check:node-safe`. `ci.yml` extendido con el step "Node-safe gate (@stability/domain)" entre `npm ci` y el build (ningún otro step tocado, sin workflow nuevo). `npx vitest run` toma los tests de `packages/*` con el include por defecto → 6 files / 24 tests (+1 vs upstream = el placeholder), los tests de la app siguen corriendo. `npm run check:node-safe` pasa. No hizo falta `vitest.workspace.ts`.
+  Satisfies: US-9 (base para US-2, US-5)
+  Depends on: T1
+  - `packages/domain/`: `package.json` (`@stability/domain`, `type: module`, dep `date-fns` en la misma versión que la app), `tsconfig.json` (`extends ../../tsconfig.base.json`, `module`/`moduleResolution` `node16`, `lib: ["ES2022"]` sin DOM, `types: []`), `src/index.ts` placeholder.
+  - `scripts/check-node-safe.mjs`: portar el de la Fase 1 anterior (escanea `src/**/*.ts`, falla ante `react`/`react-dom`/`zustand`/`@supabase/supabase-js`/`import.meta`/`localStorage`/`sessionStorage`/`navigator`/`window`/`document`, ignora comentarios).
+  - `package.json` raíz: script `"check:node-safe": "npm --workspace @stability/domain run check:node-safe"`.
+  - **Extender** `.github/workflows/ci.yml` (ya existe, corre `npx vitest run` + `lint` + `build` con env Supabase de mentira): agregar un step `npm run check:node-safe` antes del build, y `npx vitest run` que ya corre tomará los tests de `packages/*` si se apunta bien (o agregar `--project` / `vitest.workspace.ts`). NO crear un workflow nuevo.
+  Criterio: CI verde; el step node-safe aparece y pasa con el paquete placeholder.
+
+  **→ Milestone M1: check-in con el usuario. La app tiene que buildear, testear y deployar igual antes de seguir.**
+
+---
+
+## Fase 2 — Base de datos
+
+- [ ] **T4 — Migración `20260902_mcp_server_setup.sql`: schema, rol, grants, policies**
+  Satisfies: US-7, US-8
+  Depends on: T0.1
+  - `supabase/migrations/20260902_mcp_server_setup.sql` con el SQL de design.md §Data model (schema `mcp`, tabla `access_tokens`, rol `mcp_readonly`, `create extension if not exists unaccent with schema extensions`, grants sobre las 7 tablas + `mcp.access_tokens`, 8 policies `USING (true)`, timeouts, connection limit).
+  - Password del rol: generar fuerte, NO commitear. Pasar como variable a `apply_migration`/dashboard.
+  - **Aplicar requiere aprobación explícita del usuario con el SQL a la vista** (es DDL en producción — proyecto `hcvytsitbsandaphsxyn`). Puede aplicarse por el conector MCP de Supabase (`apply_migration`, transaccional) o por el dashboard.
+  - El archivo de migración SÍ va en el PR; el password NO.
+  Criterio: migración aplicada; el rol `mcp_readonly` existe con `rolcanlogin`, `NOSUPERUSER`, y los settings de timeout.
+
+- [ ] **T5 — Verificar el rol conectando como `mcp_readonly`**
+  Satisfies: US-8
+  Depends on: T4
+  - Connection string por el transaction pooler: `postgres://mcp_readonly.hcvytsitbsandaphsxyn:<pw>@aws-<region>.pooler.supabase.com:6543/postgres`.
+  - `SELECT count(*) FROM public.workout_completions;` → devuelve ~898 (NO 0 — si da 0, faltan las policies de T4).
+  - `INSERT INTO public.profiles ...` → debe fallar con error de permisos o de read-only transaction.
+  - `SELECT * FROM public.student_profiles LIMIT 1;` → debe fallar (sin grant).
+  Criterio: lee las 7 tablas, no puede escribir ninguna, no ve `student_profiles`.
+
+- [ ] **T6 — Emitir el primer token de acceso**
+  Satisfies: US-7
+  Depends on: T4
+  - Script `packages/mcp-server/scripts/mint-token.ts` (corre con credenciales de admin, no con `mcp_readonly`): genera 32 bytes aleatorios, calcula sha256, `INSERT INTO mcp.access_tokens (token_hash, profile_id, label)`, imprime el token en claro UNA vez.
+  - Emitir un token para el `profile_id` del usuario (coach).
+  Criterio: fila en `mcp.access_tokens`; token guardado por el usuario.
+
+---
+
+## Fase 3 — Esqueleto del server
+
+- [ ] **T7 — Scaffold de `packages/mcp-server`**
+  Satisfies: (base de todo)
+  Depends on: T1
+  - `package.json` (`@stability/mcp-server`), deps: `@modelcontextprotocol/server@^2`, `pg`, `zod@^4`, `@stability/domain`. Dev: `tsx`, `@modelcontextprotocol/inspector`.
+  - `tsconfig.json`, `.env.example` (`DATABASE_URL`, `MCP_ACCESS_TOKEN`, `MCP_HOST`).
+  - `src/rows.ts`: tipos de fila angostos para las 7 tablas (solo las columnas que usan los tools). NO depende del `Database` de la app.
+  - Regla de lint: prohibir `console.log` en `src/` (usar `console.error`).
+  - `README.md` con cómo correr Inspector y cómo configurar Claude Desktop.
+
+- [ ] **T8 — `db.ts`: pool de `pg` + helper de query**
+  Satisfies: US-8
+  Depends on: T7
+  - `pg.Pool` a nivel módulo con la config de design.md §"modo stdio" (`max: 2`, timeouts, `ssl: { rejectUnauthorized: true }` con el root cert de Supabase).
+  - `export async function query<T>(sql, params): Promise<T[]>` con manejo de error que NO propaga el connection string.
+  Criterio: un script de prueba hace `SELECT 1` por el pooler.
+
+- [ ] **T9 — `create-server.ts` + `stdio.ts` + un tool de humo (`list_plans`)**
+  Satisfies: US-6 (parcial)
+  Depends on: T7, T8
+  - `create-server.ts`: factory `createServer()` con `McpServer` y `registerAllTools`.
+  - `tools/list-plans.ts`: implementación completa del tool (design.md §Interfaces).
+  - `stdio.ts`: `serveStdio(createServer)` + `console.error` de arranque.
+  - Probar con `npx @modelcontextprotocol/inspector tsx src/stdio.ts`.
+  Criterio: Inspector lista `list_plans` y lo ejecuta contra la base real devolviendo planes.
+
+  **→ Milestone M2: check-in con el usuario.**
+
+---
+
+## Fase 4 — Auth y auditoría
+
+- [ ] **T10 — `auth.ts` + `audit.ts`**
+  Satisfies: US-7
+  Depends on: T9, T6
+  - `auth.ts`: `resolveToken(token) → { profileId, coachName } | null`. sha256, `SELECT ... FROM mcp.access_tokens`, join `profiles`, chequea `revoked_at`, `expires_at`, `role = 'coach'`. `assertAuthFromEnv()` para stdio (lee `MCP_ACCESS_TOKEN`, `exit(1)` si inválido).
+  - `audit.ts`: `logToolCall({ profileId, coachName, tool, args, durationMs, rowCount })` → una línea JSON a stderr.
+  - Envolver el dispatch de tools en `create-server.ts` para que todo tool valide auth primero y audite después.
+  - Errores de auth → un único `"No autorizado"` (US-7).
+  Criterio: token inválido en env → server no arranca; token de alumno → rechazo; token de coach → funciona; cada call deja línea en el log.
+
+- [ ] **T11 — Tests de `auth.ts`**
+  Satisfies: US-7
+  Depends on: T10
+  Casos: token inexistente, token revocado (`revoked_at` seteado), token expirado (`expires_at` pasado), token de un `profile` con `role = 'student'`, token válido de coach. Mock del pool o base de test.
+
+---
+
+## Fase 5 — Los 7 tools restantes
+
+Cada tool: implementación + test de contrato (input inválido → `isError` legible; caso feliz → shape correcto). Todas dependen de T10.
+
+- [ ] **T12 — `computeAdherence` en `@stability/domain` + tool `get_student_adherence`**
+  Satisfies: US-2
+  Depends on: T3, T10
+  - `packages/domain/src/adherence.ts` implementando la fórmula de design.md §Key flows (fórmula propia: `days_per_week × overlap_weeks`, dedup por `(day_number, fecha local)`, TZ Buenos Aires, excluye `cancelled`). NO se toca la app. El `note` de la respuesta menciona el caveat de la cola offline (`completed_at` puede caer en otra semana ISO — ver `notes-adherence.md`).
+  - Tests unitarios de `computeAdherence` con casos escritos a mano: rango dentro de una asignación; rango que cruza 2 asignaciones; asignación cancelada ignorada; completions duplicadas en el mismo día; borde de TZ (completion a las 23:00 Buenos Aires = 02:00 UTC del día siguiente); sin asignación → `null`.
+  - `tools/get-student-adherence.ts`: valida `from <= to`, resuelve `student_id` (existe + `role='student'`), trae assignments (join `training_plans` para `days_per_week`) + completions del rango convertidas a TZ, llama a `computeAdherence`, arma la respuesta con `assignments`, `completions` crudas y el `note` fijo.
+  Criterio: los tests unitarios pasan; el tool contra la base real devuelve un número coherente con los datos crudos que él mismo reporta; `student_id` inválido → `isError` legible; sin asignación en rango → `adherence_pct: null` + note.
+
+- [ ] **T13 — Tools `get_rpe_alerts` y `get_exercise_progression`**
+  Satisfies: US-5, US-3
+  Depends on: T10, T0.2
+  - **Copiar** `src/lib/rpeHelpers.ts` + `src/lib/rpeHelpers.test.ts` → `packages/domain/src/rpe.ts` (+ test). NO se toca la app: sigue con su propia copia. Agregar al `ci.yml` un check `diff` que falle si las dos copias divergen (la unificación va al spec de correcciones).
+  - `get_rpe_alerts`: últimos N `workout_completions` por alumno (ordenados `completed_at` DESC) → `detectRpeAlert`. Devuelve solo alumnos en alerta con los valores que la dispararon.
+  - `get_exercise_progression`: `unaccent(lower(exercise_name)) LIKE unaccent(lower('%'||$q||'%'))` sobre `exercise_weight_logs`, filtra por `student_id`, ordena por `logged_at`. `matched_exercise_names` en la respuesta.
+  Criterio: `get_rpe_alerts` coincide con las alertas de `StudentsList` hoy; progresión con nombre parcial y con acento faltante encuentra registros; sin registros → `sets: []` + mensaje.
+
+- [ ] **T14 — Tools `list_students`, `get_expiring_plans`, `get_plan` + registro final**
+  Satisfies: US-1, US-4, US-6
+  Depends on: T10
+  - `list_students`: `profiles` + lateral sobre asignaciones activas.
+  - `get_expiring_plans`: `end_date <= now() + within_days`, incluye vencidas con `is_overdue`.
+  - `get_plan`: días + ejercicios ordenados por `display_order`, usa `stage_name` desnormalizado.
+  - `get_expiration_status`: **copiar/extraer** la lógica pura de vencimiento a `packages/domain/src/expiration.ts` desde `src/features/students/PlanExpirations.tsx` (solo la función, sin JSX). NO se refactoriza el consumidor en esta fase.
+  - `registerAllTools` monta los 8.
+  Criterio: los 8 tools aparecen en `tools/list` y responden.
+
+  **→ Milestone M3: check-in con el usuario.**
+
+---
+
+## Fase 6 — Claude Desktop + cierre
+
+- [ ] **T15 — Configurar y probar en Claude Desktop (Windows)**
+  Satisfies: US-1..US-8 end-to-end
+  Depends on: T14
+  - Build del server (`tsc`), entry `packages/mcp-server/build/stdio.js` (path absoluto en la config).
+  - `%APPDATA%\Claude\claude_desktop_config.json`: entrada `stability-db` con `command: "node"`, path absoluto, `env: { DATABASE_URL, MCP_ACCESS_TOKEN }`.
+  - Reiniciar Claude Desktop, verificar que el server aparece conectado, probar cada tool con un prompt en lenguaje natural.
+  - Revisar `%APPDATA%\Claude\logs\mcp-server-stability-db.log`: líneas de auditoría presentes, sin ruido en stdout.
+  Criterio: las 8 preguntas de las user stories respondidas correctamente desde el chat.
+
+- [ ] **T16 — `http.ts` (escrito, no desplegado) + doc de operación**
+  Satisfies: D-1
+  Depends on: T14
+  - `http.ts` con `createMcpHandler` + Express, auth por header `Authorization`. Compila y pasa un test local con Inspector en modo HTTP, pero NO se despliega.
+  - `packages/mcp-server/README.md`: cómo emitir/revocar tokens, cómo rotar el password de `mcp_readonly`, qué hacer cuando se agrega una tabla nueva (grant + policy para `mcp_readonly`), checklist de deploy HTTP para el futuro.
+
+- [ ] **T17 — Actualizar el snapshot de esquema y marcar specs como Done**
+  Depends on: T4
+  - Regenerar `supabase/schema/*.sql` para incluir el schema `mcp`, el rol y las policies nuevas.
+  - `requirements.md`, `design.md`, `tasks.md` → Status: Done.
+
+- [ ] **T18 — Abrir el PR a `RamiroC7/StabilitySistemaRami`**
+  Depends on: T15
+  - Los specs (`specs/mcp-server/*.md`, hoy en `professors-platform/specs/` en la máquina local) y `supabase/schema/` van en el PR, en la raíz del repo (`specs/mcp-server/`, `supabase/`).
+  - Descripción del PR: qué agrega (workspace + `packages/domain` + `packages/mcp-server`), qué NO toca (la app, `api/`), la migración de base que ya se aplicó a producción (link a la corrida), y cómo probar (Inspector).
+  - Ramiro revisa y mergea a main. NO mergear nosotros.
+  Criterio: PR abierto, CI verde, esperando review.

@@ -1,0 +1,23 @@
+{
+  // compilerOptions comunes para los paquetes de packages/*.
+  // NO lo extienden los tsconfig de la app (tsconfig.app.json / tsconfig.node.json
+  // mantienen sus overrides de Vite/React). Extraidos de esos dos archivos: lo que
+  // comparten mas los defaults sanos que cada paquete Node espera.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noEmit": true
+  }
+}
