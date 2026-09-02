@@ -109,7 +109,24 @@ Milestones de check-in con el usuario:
 
 ## Fase 3 — Esqueleto del server
 
-- [ ] **T7 — Scaffold de `packages/mcp-server`**
+- [x] **T7 — Scaffold de `packages/mcp-server`** — 2026-09-02
+  Resultado: `packages/mcp-server` (`@stability/mcp-server`, ESM, private). SDK:
+  **`@modelcontextprotocol/server` v2.0.0** (publicado 2026-07-27, dist-tag `latest`,
+  no alpha/beta; API `McpServer` + `registerTool` + `serveStdio` de `/stdio` como en
+  design.md). Runtime deps: `@modelcontextprotocol/server` (→ `core` + `zod`), `pg` ^8.16,
+  `zod` ^4.3.6 (deduped a la de la app, sin bump), `@stability/domain` (*, sin usar aún).
+  Dev: `tsx`, `typescript`, `@types/pg`, `@types/node`. **El Inspector NO se instala**
+  (arrastraba ~1150 paquetes Vite/React); se usa por `npx @modelcontextprotocol/inspector@2`.
+  `tsconfig.json` extends `tsconfig.base.json` (module/moduleResolution `nodenext`,
+  `outDir build/`, `rootDir src/`, `noEmit false`). `.env.example` + `.gitignore` local
+  (`build/`, `.env`). `src/rows.ts` con tipos de fila angostos de las 7 tablas.
+  `README.md` completo (estado, SDK, Inspector, Claude Desktop, seam de auth, 8 tools).
+  Regla de lint: override en `eslint.config.js` para `packages/mcp-server/**` con
+  `no-console: ["error", { allow: ["error"] }]` (verificado: `console.log` → error).
+  Paridad vs `upstream/main`: build **3665 módulos (idéntico)**, `npx vitest run` 24 OK
+  (con env de CI), lint 0 errores / 1 warning preexistente, `check:node-safe` OK.
+  Diff del PR: +1372 líneas, único archivo fuera de `packages/mcp-server/` + `specs/` +
+  `package-lock.json` es `eslint.config.js` (+14).
   Satisfies: (base de todo)
   Depends on: T1
   - `package.json` (`@stability/mcp-server`), deps: `@modelcontextprotocol/server@^2`, `pg`, `zod@^4`, `@stability/domain`. Dev: `tsx`, `@modelcontextprotocol/inspector`.
@@ -118,23 +135,52 @@ Milestones de check-in con el usuario:
   - Regla de lint: prohibir `console.log` en `src/` (usar `console.error`).
   - `README.md` con cómo correr Inspector y cómo configurar Claude Desktop.
 
-- [ ] **T8 — `db.ts`: pool de `pg` + helper de query**
+- [x] **T8 — `db.ts`: pool de `pg` + helper de query** — 2026-09-02
+  Resultado: `src/db.ts` con `pg.Pool` a nivel de módulo (`max: 2`, idle/connection
+  timeout 10s). **`ssl: { rejectUnauthorized: false }`** con TODO documentado: el
+  transaction pooler de Supabase no encadena a una CA pública; el ideal es empaquetar
+  el root cert (`prod-ca-2021.crt`) y pasar a `rejectUnauthorized: true`. Tira error
+  claro al importar si falta `DATABASE_URL`. `query<T>(text, params)` devuelve
+  `result.rows`; el catch re-lanza un Error **sanitizado** (password y cualquier
+  `postgresql://…@` reemplazados por `***`). `closePool()` para shutdown.
+  Verificado contra la base real por el pooler (`:6543`, rol `mcp_readonly`):
+  `select 1` → `1`; `count(*)::int from training_plans` → **163**; query a tabla
+  inexistente → `Error consultando la base: relation "public.nonexistent_xyz" does not exist`
+  (sin credenciales).
   Satisfies: US-8
   Depends on: T7
-  - `pg.Pool` a nivel módulo con la config de design.md §"modo stdio" (`max: 2`, timeouts, `ssl: { rejectUnauthorized: true }` con el root cert de Supabase).
-  - `export async function query<T>(sql, params): Promise<T[]>` con manejo de error que NO propaga el connection string.
-  Criterio: un script de prueba hace `SELECT 1` por el pooler.
 
-- [ ] **T9 — `create-server.ts` + `stdio.ts` + un tool de humo (`list_plans`)**
+- [x] **T9 — `create-server.ts` + `stdio.ts` + un tool de humo (`list_plans`)** — 2026-09-02
+  Resultado: `create-server.ts` (factory `createServer()` → `McpServer` name
+  `stability-db` v0.1.0, llama a `registerAllTools`). `tools/index.ts`
+  (`registerAllTools`, 1/8 tools) con el comentario largo del **seam de auth** para
+  Fase 4. `tools/list-plans.ts`: tool `list_plans` (US-6), input
+  `{ include_templates?: boolean }` (default false) en Zod v4, SQL fijo parametrizado
+  ($1 = include_templates; `assigned_count` por left join agregado a
+  `training_plan_assignments`), `is_archived = false`, annotations readOnly/idempotent,
+  devuelve `content` text + `structuredContent`. `stdio.ts`: `serveStdio(createServer)`,
+  `console.error` de arranque, SIGINT/SIGTERM → `handle.close()` + `closePool()`, aviso
+  "stdout es el canal JSON-RPC". `load-env.ts` (carga `packages/mcp-server/.env` con
+  `process.loadEnvFile`, ruta relativa al paquete, zero-dep) para dev/inspect.
+  Verificado con `npx @modelcontextprotocol/inspector@2 --cli` desde la raíz del repo, contra la base real:
+  `tools/list` → `list_plans`; `tools/call list_plans include_templates=false` → 48
+  planes reales; `include_templates=true` → 113 (65 plantillas + 48).
   Satisfies: US-6 (parcial)
   Depends on: T7, T8
-  - `create-server.ts`: factory `createServer()` con `McpServer` y `registerAllTools`.
-  - `tools/list-plans.ts`: implementación completa del tool (design.md §Interfaces).
-  - `stdio.ts`: `serveStdio(createServer)` + `console.error` de arranque.
-  - Probar con `npx @modelcontextprotocol/inspector tsx src/stdio.ts`.
-  Criterio: Inspector lista `list_plans` y lo ejecuta contra la base real devolviendo planes.
 
   **→ Milestone M2: check-in con el usuario.**
+  Estado M2 (2026-09-02): rama `mcp-server/skeleton` (base `main`). Server responde
+  `list_plans` contra producción vía Inspector CLI. Fases 4-6 (auth, tools, Claude
+  Desktop) las toma otro dev sobre este esqueleto. Falta: PR y merge de Ramiro.
+  Estado M2 (2026-09-02): T7–T9 hechas en la rama `mcp-server/skeleton` (base
+  `upstream/main`), 3 commits, sin pushear. El server responde `tools/list` y
+  `tools/call list_plans` desde el MCP Inspector contra la base de producción.
+  SDK: `@modelcontextprotocol/server` v2.0.0. Paridad de la app OK (build / vitest /
+  lint / `check:node-safe` iguales, salvo `zod` 4.3.6 → 4.5.4, minor dentro de rango).
+  **Handoff:** Fases 4 (auth: `auth.ts` + `audit.ts`, seam marcado con
+  `// TODO(Fase 4 / T10)` en `create-server.ts`, `stdio.ts`, `tools/index.ts`),
+  5 (los 7 tools restantes + `@stability/domain`) y 6 (Claude Desktop + `http.ts`)
+  las toma otro dev sobre este esqueleto.
 
 ---
 

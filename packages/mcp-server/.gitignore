@@ -1,0 +1,5 @@
+# Salida de tsc
+build/
+
+# Env local (también lo cubre el .gitignore de la raíz por el patrón `.env`)
+.env

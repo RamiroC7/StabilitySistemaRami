@@ -1,0 +1,26 @@
+{
+  "name": "@stability/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Servidor MCP de solo lectura sobre la base Postgres de Sistema Alfa (Supabase).",
+  "main": "./build/stdio.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "dev:stdio": "tsx src/stdio.ts",
+    "inspect": "npx --yes @modelcontextprotocol/inspector@2 --cli tsx src/stdio.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "@stability/domain": "*",
+    "pg": "^8.16.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.11",
+    "@types/pg": "^8.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.3"
+  }
+}
