@@ -75,12 +75,14 @@ Milestones de check-in con el usuario:
   Criterio: CI verde; el step node-safe aparece y pasa con el paquete placeholder.
 
   **→ Milestone M1: check-in con el usuario. La app tiene que buildear, testear y deployar igual antes de seguir.**
+  Estado M1 (2026-09-02): rama `mcp-server/setup` pusheada a `RamiroC7/StabilitySistemaRami`, 6 commits. Incluye el fix del error de lint preexistente (`fix(training): mueve buildCompleteCircuitSetHandler a circuitUtils`) → lint pasa de 1 error a 0. Verificación: build idéntico, 24 tests (23 app + 1 placeholder), lint 0 errores. **Estrategia de PR cambiada:** en vez de una PR única al final (T18), se hace **una PR por fase**. Esta es la PR de Fase 1; Ramiro mergea. Falta: crear la PR (no hay `gh` local — link + body dados al usuario) y verificar el preview de Vercel.
 
 ---
 
 ## Fase 2 — Base de datos
 
-- [ ] **T4 — Migración `20260902_mcp_server_setup.sql`: schema, rol, grants, policies**
+- [x] **T4 — Migración `20260902000000_mcp_server_setup.sql`: schema, rol, grants, policies** — 2026-09-02
+  Aplicada a producción (`hcvytsitbsandaphsxyn`) vía `apply_migration`. Rama `mcp-server/db` (commit 454ed0f). Password del rol seteado aparte (no commiteado). Extensión `unaccent` instalada en `extensions`.
   Satisfies: US-7, US-8
   Depends on: T0.1
   - `supabase/migrations/20260902_mcp_server_setup.sql` con el SQL de design.md §Data model (schema `mcp`, tabla `access_tokens`, rol `mcp_readonly`, `create extension if not exists unaccent with schema extensions`, grants sobre las 7 tablas + `mcp.access_tokens`, 8 policies `USING (true)`, timeouts, connection limit).
@@ -89,21 +91,19 @@ Milestones de check-in con el usuario:
   - El archivo de migración SÍ va en el PR; el password NO.
   Criterio: migración aplicada; el rol `mcp_readonly` existe con `rolcanlogin`, `NOSUPERUSER`, y los settings de timeout.
 
-- [ ] **T5 — Verificar el rol conectando como `mcp_readonly`**
+- [x] **T5 — Verificar el rol conectando como `mcp_readonly`** — 2026-09-02
+  Verificado con un script `pg` contra el transaction pooler. **Host: `aws-1-us-east-1.pooler.supabase.com:6543`**, usuario `mcp_readonly.hcvytsitbsandaphsxyn` (PG 17.6, us-east-1). Resultados:
+  - `workout_completions` 925, `training_plan_exercises` 5757, `profiles` 45, `exercise_weight_logs` 869 — **ve filas, policies OK** (no 0)
+  - `mcp.access_tokens` legible, `unaccent('Presión Múscular')` → `Presion Muscular`
+  - `student_profiles` y `macrocycles` → `permission denied`
+  - `INSERT` / `UPDATE` → `cannot execute ... in a read-only transaction`
   Satisfies: US-8
   Depends on: T4
-  - Connection string por el transaction pooler: `postgres://mcp_readonly.hcvytsitbsandaphsxyn:<pw>@aws-<region>.pooler.supabase.com:6543/postgres`.
-  - `SELECT count(*) FROM public.workout_completions;` → devuelve ~898 (NO 0 — si da 0, faltan las policies de T4).
-  - `INSERT INTO public.profiles ...` → debe fallar con error de permisos o de read-only transaction.
-  - `SELECT * FROM public.student_profiles LIMIT 1;` → debe fallar (sin grant).
-  Criterio: lee las 7 tablas, no puede escribir ninguna, no ve `student_profiles`.
 
-- [ ] **T6 — Emitir el primer token de acceso**
+- [x] **T6 — Emitir el primer token de acceso** — 2026-09-02
+  Token emitido para `profile_id = 221b5c95-5eef-49d1-80db-1257905da4ab` (`maximo@gmail.com`, "Maximo Perez", coach — la cuenta de coach activa; `maximofini@gmail.com` no existe en la base). Fila `mcp.access_tokens.id = 0f302d8b-…`, sin expiración. Verificado: la query de auth (`join profiles`, resuelve `role='coach'`) corre OK como `mcp_readonly`. Token en claro entregado al usuario, NO commiteado. El script `mint-token.ts` se escribe en Fase 3 (T7) para futuros tokens.
   Satisfies: US-7
   Depends on: T4
-  - Script `packages/mcp-server/scripts/mint-token.ts` (corre con credenciales de admin, no con `mcp_readonly`): genera 32 bytes aleatorios, calcula sha256, `INSERT INTO mcp.access_tokens (token_hash, profile_id, label)`, imprime el token en claro UNA vez.
-  - Emitir un token para el `profile_id` del usuario (coach).
-  Criterio: fila en `mcp.access_tokens`; token guardado por el usuario.
 
 ---
 
