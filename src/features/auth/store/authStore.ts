@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import * as Sentry from "@sentry/react";
 import { supabase } from "@/lib/supabase";
 import { uploadProfileImage } from "@/lib/supabase-storage";
 import type { User } from "@supabase/supabase-js";
@@ -203,6 +204,10 @@ export const useAuthStore = create<AuthState>()(
             const state = get();
             if (state.isInitializing) {
               console.warn("Auth initialization timed out");
+              // Rehidratacion de sesion colgada (getSession()/userToProfessor()
+              // nunca resuelve) — tipico en iOS. Sin esto era invisible: el
+              // console.warn no sobrevive al build de produccion.
+              Sentry.captureMessage("Auth initialization timed out", "warning");
               set({ isInitializing: false });
             }
           }, 8000);
@@ -288,6 +293,11 @@ export const useAuthStore = create<AuthState>()(
           } catch (error) {
             clearTimeout(safetyTimeout);
             console.error("Error initializing auth:", error);
+            // El otro caso de rehidratacion silenciosa: getSession() o
+            // userToProfessor() tiran una excepcion en vez de colgarse.
+            Sentry.captureException(error, {
+              tags: { feature: "auth-rehydration" },
+            });
             // En caso de error, limpiar estado para evitar pantalla blanca
             set({
               professor: null,

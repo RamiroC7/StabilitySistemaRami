@@ -5,6 +5,11 @@ import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { router } from "@/router";
 import { useAuthStore } from "@/features/auth/store/authStore";
+import { initSentry } from "@/lib/sentry";
+
+// Se inicializa a nivel de modulo (antes de que React monte nada), junto a
+// los demas globales de observabilidad (Analytics, SpeedInsights mas abajo).
+initSentry();
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);

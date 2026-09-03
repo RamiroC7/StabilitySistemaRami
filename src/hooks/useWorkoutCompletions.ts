@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import * as Sentry from "@sentry/react";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import { useDataCacheStore } from "@/store/dataCacheStore";
@@ -233,6 +234,17 @@ export function useWorkoutCompletions(
           if (isLikelyNetworkError(result.error)) {
             return queueForLater();
           }
+          // Fallo real de escritura (no de red): es el caso mas caro para
+          // el alumno — cree que termino el entrenamiento y no quedo
+          // guardado. Sin esto era completamente silencioso.
+          Sentry.captureException(new Error(result.error ?? "saveCompletion failed"), {
+            tags: { feature: "saveCompletion" },
+            extra: {
+              assignmentId: params.assignmentId,
+              dayNumber: params.dayNumber,
+              studentId: professor.id,
+            },
+          });
           return { success: false, error: result.error };
         }
 
@@ -252,6 +264,14 @@ export function useWorkoutCompletions(
         if (isLikelyNetworkError(err)) {
           return queueForLater();
         }
+        Sentry.captureException(err, {
+          tags: { feature: "saveCompletion" },
+          extra: {
+            assignmentId: params.assignmentId,
+            dayNumber: params.dayNumber,
+            studentId: professor.id,
+          },
+        });
         return {
           success: false,
           error: err instanceof Error ? err.message : "Error inesperado",

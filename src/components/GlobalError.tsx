@@ -1,11 +1,16 @@
 import { useRouteError } from "react-router-dom";
 import { WifiOff } from "lucide-react";
+import * as Sentry from "@sentry/react";
 
 export function GlobalError() {
   const error = useRouteError();
 
   // Log the error for debugging purposes
   console.error("[GlobalError]", error);
+  // Y reportarlo a Sentry — en produccion el console.error de arriba se
+  // elimina del build (esbuild.drop), asi que sin esto el error no queda
+  // registrado en ningun lado.
+  Sentry.captureException(error);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 px-6 text-center">

@@ -103,3 +103,4 @@ professors-platform/
 
 - [Guía de Implementación PWA](./PWA-GUIA-IMPLEMENTACION.md): Documentación sobre Service Workers, caché offline y splash screens para iOS.
 - [Diseño de Circuitos y Bloques](./docs/plans/2026-06-13-circuitos-design.md): Especificación técnica del modelo de bloques y circuitos.
+- [Deploy, Entornos y Operación](./docs/deploy.md): Cómo se despliega, variables de entorno y monitoreo de errores en producción.
