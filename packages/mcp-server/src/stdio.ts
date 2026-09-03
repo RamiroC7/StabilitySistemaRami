@@ -25,7 +25,7 @@ import { assertAuthFromEnv } from "./auth.js";
 // "Arranque en modo stdio").
 await assertAuthFromEnv();
 
-const handle = serveStdio(createServer);
+const handle = serveStdio(() => createServer());
 
 console.error("[stability-db] servidor MCP stdio listo (Fase 4: auth + auditoria)");
 

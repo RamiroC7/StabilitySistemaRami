@@ -302,11 +302,36 @@ Cada tool: implementación + test de contrato (input inválido → `isError` leg
   - Revisar `%APPDATA%\Claude\logs\mcp-server-stability-db.log`: líneas de auditoría presentes, sin ruido en stdout.
   Criterio: las 8 preguntas de las user stories respondidas correctamente desde el chat.
 
-- [ ] **T16 — `http.ts` (escrito, no desplegado) + doc de operación**
+- [x] **T16 — `http.ts` (escrito, no desplegado) + doc de operación** — 2026-09-03
+  Resultado: `src/http.ts` con `createMcpHandler` (API real de
+  `@modelcontextprotocol/server` v2.0.0) montado a mano sobre `node:http` — **no**
+  Express/`@modelcontextprotocol/express` como decía el sketch de `design.md`: ese
+  paquete no está instalado ni es dependencia del proyecto, y `createMcpHandler` ya
+  expone un `fetch(request)` web-standard que no lo necesita (desviación
+  documentada en el propio `http.ts` y en el README). Conversión Node↔web-standard
+  con `stream.Readable.toWeb`/`fromWeb` (Node core). Auth por header
+  `Authorization: Bearer <token>`: se resuelve una vez por request con el mismo
+  `resolveToken` de `auth.ts` y responde `401` con el mismo `UNAUTHORIZED_MESSAGE`
+  opaco de US-7 (no se usó `requireBearerAuth`/`verifyBearerToken` de la SDK,
+  pensados para un Resource Server OAuth real, con su propio formato de error —
+  no encaja con el modelo de token personal de este proyecto). `create-server.ts`
+  ahora acepta `authOverride?: ResolvedAuth` para que `http.ts` pase la identidad
+  ya resuelta por request (vía `ctx.authInfo.extra`) sin que cada tool call
+  vuelva a pegarle a la base; stdio sigue igual (sin pasar el override, resuelve
+  `MCP_ACCESS_TOKEN` del entorno como antes — `stdio.ts` se ajustó a
+  `serveStdio(() => createServer())` por el cambio de firma). Protección
+  DNS-rebinding con los helpers reales de la SDK
+  (`hostHeaderValidationResponse`/`originValidationResponse`); `MCP_HOST` y
+  `MCP_HTTP_PORT` nuevos en `.env.example`. README: sección "Transport HTTP" +
+  checklist de deploy futuro (TLS, cert real del pooler, `MCP_HOST` real,
+  automatizar `mint-token.ts`, reevaluar auditoría con múltiples réplicas).
+  **Verificado:** `npx tsc --noEmit` y `npx eslint` limpios. **NO verificado:**
+  correrlo (`npx tsx src/http.ts`) ni probarlo con el Inspector en modo HTTP —
+  mismo bloqueo de binarios nativos (esbuild) que Vitest en este entorno, más
+  la falta de `DATABASE_URL` real. Queda para antes del deploy real, no antes de
+  este PR (T16 pide "escrito, no desplegado").
   Satisfies: D-1
   Depends on: T14
-  - `http.ts` con `createMcpHandler` + Express, auth por header `Authorization`. Compila y pasa un test local con Inspector en modo HTTP, pero NO se despliega.
-  - `packages/mcp-server/README.md`: cómo emitir/revocar tokens, cómo rotar el password de `mcp_readonly`, qué hacer cuando se agrega una tabla nueva (grant + policy para `mcp_readonly`), checklist de deploy HTTP para el futuro.
 
 - [ ] **T17 — Actualizar el snapshot de esquema y marcar specs como Done**
   Depends on: T4

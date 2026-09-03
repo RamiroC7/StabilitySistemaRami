@@ -8,19 +8,29 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/server";
 import { registerAllTools } from "./tools/index.js";
-import { resolveToken, UNAUTHORIZED_MESSAGE } from "./auth.js";
+import { resolveToken, UNAUTHORIZED_MESSAGE, type ResolvedAuth } from "./auth.js";
 import { logToolCall } from "./audit.js";
 
-export function createServer(): McpServer {
+/**
+ * @param authOverride Identidad ya resuelta para ESTA instancia del server.
+ *   - `undefined` (stdio, default): cada tool call resuelve `MCP_ACCESS_TOKEN`
+ *     desde el entorno por su cuenta (comportamiento original de T10).
+ *   - `ResolvedAuth` (HTTP, Fase 6 / T16): `http.ts` ya resolvio y valido el
+ *     token del header `Authorization` UNA vez por request (antes de construir
+ *     el server), asi que `guardToolDispatch` lo reusa en vez de volver a
+ *     pegarle a la base por cada tool call. Ver `http.ts` para como se pasa
+ *     (via `ctx.authInfo.extra` de `McpServerFactory`).
+ */
+export function createServer(authOverride?: ResolvedAuth): McpServer {
   const server = new McpServer({
     name: "stability-db",
     version: "0.1.0",
   });
 
   // Fase 4 / T10: se envuelve `registerTool` ANTES de registrar ningun tool,
-  // asi que los 8 tools de `registerAllTools` quedan protegidos sin que
+  // asi que los 7 tools de `registerAllTools` quedan protegidos sin que
   // `tools/index.ts` ni cada archivo de `tools/*.ts` sepan que existe auth.
-  registerAllTools(guardToolDispatch(server));
+  registerAllTools(guardToolDispatch(server, authOverride));
 
   return server;
 }
@@ -54,20 +64,20 @@ type RegisterToolLike = (
  * `McpServer` al tipar su propia llamada.
  * ────────────────────────────────────────────────────────────────────────────
  */
-function guardToolDispatch(server: McpServer): McpServer {
+function guardToolDispatch(server: McpServer, authOverride?: ResolvedAuth): McpServer {
   const originalRegisterTool = server.registerTool.bind(server) as unknown as RegisterToolLike;
 
   const guardedRegisterTool: RegisterToolLike = (name, config, handler) => {
     const guardedHandler: ToolHandler = async (...handlerArgs) => {
-      const auth = await resolveToken(process.env.MCP_ACCESS_TOKEN ?? "").catch(
-        (err: unknown) => {
+      const auth =
+        authOverride ??
+        (await resolveToken(process.env.MCP_ACCESS_TOKEN ?? "").catch((err: unknown) => {
           console.error(
             "[auth] error validando token en tool call:",
             err instanceof Error ? err.message : String(err),
           );
           return null;
-        },
-      );
+        }));
 
       if (!auth) {
         return {
