@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
 vi.mock("../db.js", () => ({ query: queryMock }));
@@ -6,6 +6,13 @@ vi.mock("../db.js", () => ({ query: queryMock }));
 const { getExerciseProgressionHandler } = await import("./get-exercise-progression.js");
 
 describe("getExerciseProgressionHandler", () => {
+  // Sin esto, los mocks se acumulan entre tests del mismo archivo (vitest no
+  // resetea mocks automaticamente) — ver el bug real que causo en
+  // get-plan.test.ts.
+  beforeEach(() => {
+    queryMock.mockReset();
+  });
+
   it("sin registros devuelve sets: [] con mensaje, no un error", async () => {
     queryMock.mockResolvedValueOnce([]);
 
