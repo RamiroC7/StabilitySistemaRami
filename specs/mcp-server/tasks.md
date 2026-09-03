@@ -186,19 +186,36 @@ Milestones de check-in con el usuario:
 
 ## Fase 4 — Auth y auditoría
 
-- [ ] **T10 — `auth.ts` + `audit.ts`**
+- [x] **T10 — `auth.ts` + `audit.ts`** — 2026-09-03
+  Resultado: `auth.ts` con `resolveToken(token) -> ResolvedAuth | null` (sha256,
+  `SELECT ... FROM mcp.access_tokens JOIN public.profiles`, chequea `revoked_at`,
+  `expires_at`, `role = 'coach'`; cualquier motivo de rechazo devuelve `null`,
+  nunca se distingue la causa) y `assertAuthFromEnv()` (lee `MCP_ACCESS_TOKEN`,
+  `console.error` + `exit(1)` si falta o es inválido — la llama `stdio.ts` antes
+  de `serveStdio`). `audit.ts` con `logToolCall(...)` -> línea JSON a stderr
+  (`ts, profile_id, coach_name, tool, args, duration_ms, row_count`; `row_count`
+  best-effort desde `structuredContent`). El dispatch se envuelve en
+  `create-server.ts` (`guardToolDispatch`, wrapea `server.registerTool` ANTES de
+  `registerAllTools`): cada tool call vuelve a resolver el token — no solo al
+  arrancar, para auditar cada llamada — y si falla responde `isError: true` con
+  `"No autorizado"` sin ejecutar el handler real. `tools/index.ts` y
+  `tools/list-plans.ts` no cambiaron: no necesitan saber que existe auth.
+  Verificado: `npx tsc --noEmit` y `npx eslint` limpios. Falta correr
+  `npx vitest run` (bloqueado en el entorno de verificación por un problema de
+  binarios nativos de rollup ajeno a este cambio — ver mensaje al usuario);
+  queda para correrlo en la terminal real antes del push.
   Satisfies: US-7
   Depends on: T9, T6
-  - `auth.ts`: `resolveToken(token) → { profileId, coachName } | null`. sha256, `SELECT ... FROM mcp.access_tokens`, join `profiles`, chequea `revoked_at`, `expires_at`, `role = 'coach'`. `assertAuthFromEnv()` para stdio (lee `MCP_ACCESS_TOKEN`, `exit(1)` si inválido).
-  - `audit.ts`: `logToolCall({ profileId, coachName, tool, args, durationMs, rowCount })` → una línea JSON a stderr.
-  - Envolver el dispatch de tools en `create-server.ts` para que todo tool valide auth primero y audite después.
-  - Errores de auth → un único `"No autorizado"` (US-7).
-  Criterio: token inválido en env → server no arranca; token de alumno → rechazo; token de coach → funciona; cada call deja línea en el log.
 
-- [ ] **T11 — Tests de `auth.ts`**
+- [x] **T11 — Tests de `auth.ts`** — 2026-09-03
+  Resultado: `auth.test.ts`, 8 casos con `./db.js` mockeado (`vi.mock` +
+  `vi.hoisted`, no hace falta `DATABASE_URL`): token inexistente, revocado,
+  expirado, de un profile `role='student'`, token válido de coach, token sin
+  `expires_at` (nunca vence), hash del token (nunca se consulta en claro), y
+  string vacío (no llega a consultar la base). Falta correr `npx vitest run`
+  en la terminal real (ver nota de T10) para confirmar que pasan de verdad.
   Satisfies: US-7
   Depends on: T10
-  Casos: token inexistente, token revocado (`revoked_at` seteado), token expirado (`expires_at` pasado), token de un `profile` con `role = 'student'`, token válido de coach. Mock del pool o base de test.
 
 ---
 

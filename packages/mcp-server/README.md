@@ -5,12 +5,12 @@ de Sistema Alfa (Supabase). Expone un conjunto acotado de tools para que un asis
 (Claude Desktop) responda preguntas sobre alumnos, planes, adherencia, RPE y
 vencimientos — sin poder escribir nada.
 
-## Estado (2026-09-02)
+## Estado (2026-09-03)
 
 | Fase | Qué | Estado |
 |------|-----|--------|
-| **Fase 3 — esqueleto (T7–T9)** | scaffold del paquete, `db.ts`, factory + transport stdio, **1 tool** (`list_plans`) | ✅ este entregable |
-| Fase 4 — auth y auditoría (T10–T11) | `auth.ts` (token → `profiles.id`, exige `role='coach'`), `audit.ts`, envoltura del dispatch | ⬜ otro dev |
+| Fase 3 — esqueleto (T7–T9) | scaffold del paquete, `db.ts`, factory + transport stdio, **1 tool** (`list_plans`) | ✅ |
+| **Fase 4 — auth y auditoría (T10–T11)** | `auth.ts` (token → `profiles.id`, exige `role='coach'`), `audit.ts`, envoltura del dispatch en `create-server.ts` | ✅ este entregable |
 | Fase 5 — los 7 tools restantes (T12–T14) | `get_student_adherence`, `get_exercise_progression`, `get_expiring_plans`, `get_rpe_alerts`, `list_students`, `get_plan` + `@stability/domain` | ⬜ otro dev |
 | Fase 6 — Claude Desktop + HTTP (T15–T16) | config de Claude Desktop, `http.ts` (escrito, no desplegado) | ⬜ otro dev |
 
@@ -116,17 +116,36 @@ Se configura en **Fase 6 / T15**. Resumen (ver design.md §Key flows y §Compone
 > `console.error` (stderr). Un `console.log` rompe el protocolo. La regla de lint
 > `no-console` del paquete (en `eslint.config.js`) lo prohíbe (`allow: ["error"]`).
 
-## Dónde va la auth (Fase 4 / T10)
+## Auth y auditoría (Fase 4 / T10–T11)
 
-El **seam** está marcado con `// TODO(Fase 4 / T10)` en:
+`src/auth.ts` expone `resolveToken(token)`: `sha256(token)` →
+`SELECT ... FROM mcp.access_tokens JOIN public.profiles`, chequea `revoked_at IS NULL`,
+`expires_at` (`NULL` o futuro), y `role = 'coach'`. Cualquier motivo de rechazo
+devuelve `null` — nunca se distingue la causa hacia afuera (US-7).
 
-- `src/create-server.ts` — punto de intercepción del dispatch (validar token antes, auditar después).
-- `src/stdio.ts` — `assertAuthFromEnv()` antes de `serveStdio`: si `MCP_ACCESS_TOKEN` falta o es inválido → `console.error` + `process.exit(1)`.
-- `src/tools/index.ts` — nota sobre las dos formas de envolver los handlers.
+Dos puntos de uso:
 
-`auth.ts` debe: `sha256(token)` → `SELECT ... FROM mcp.access_tokens WHERE token_hash=$1`,
-join `profiles`, chequear `revoked_at IS NULL`, `expires_at`, y `role = 'coach'`.
-Cualquier fallo → un único error `"No autorizado"` (US-7).
+- `assertAuthFromEnv()` — la llama `src/stdio.ts` **antes** de abrir el transport.
+  Si `MCP_ACCESS_TOKEN` falta, o no resuelve a un coach, loguea el motivo a
+  stderr y sale con `process.exit(1)` (Claude Desktop marca el server "failed").
+- `guardToolDispatch(server)` en `src/create-server.ts` — envuelve
+  `server.registerTool` **antes** de que `registerAllTools` registre ningún
+  tool. Cada tool call vuelve a resolver el token (para dejar rastro por
+  llamada, no solo al arrancar): si falla, la tool ni se ejecuta y la
+  respuesta es `isError: true` con el texto `"No autorizado"`; si pasa, corre
+  el handler real y audita con `src/audit.ts`.
+
+`src/audit.ts` — `logToolCall(...)` emite una línea JSON a stderr por cada
+tool call exitosa: `{ ts, profile_id, coach_name, tool, args, duration_ms, row_count }`.
+`row_count` es best-effort (busca el primer array dentro de `structuredContent`).
+
+Ni `src/tools/index.ts` ni los archivos de `src/tools/*.ts` (ni los que se
+agreguen en Fase 5) necesitan importar nada de auth: el envoltorio en
+`create-server.ts` es el único punto de intercepción.
+
+**Tests (T11):** `src/auth.test.ts` — token inexistente, revocado, expirado,
+de un profile `role='student'`, y token válido de coach. Mockean `./db.js`
+(`vi.mock`), así no hace falta `DATABASE_URL` para correrlos.
 
 ## Operación (para más adelante)
 
@@ -141,9 +160,12 @@ Cualquier fallo → un único error `"No autorizado"` (US-7).
 ```
 packages/mcp-server/
 ├─ src/
-│  ├─ stdio.ts          # entrypoint: serveStdio(createServer) + SIGINT/SIGTERM
+│  ├─ stdio.ts          # entrypoint: assertAuthFromEnv() + serveStdio(createServer) + SIGINT/SIGTERM
 │  ├─ load-env.ts       # carga packages/mcp-server/.env (process.loadEnvFile), zero-dep
-│  ├─ create-server.ts  # factory createServer() -> McpServer  (seam de auth acá)
+│  ├─ create-server.ts  # factory createServer() -> McpServer + guardToolDispatch() (auth+auditoría)
+│  ├─ auth.ts           # resolveToken(), assertAuthFromEnv(), hashToken() (Fase 4 / T10)
+│  ├─ auth.test.ts      # tests de resolveToken (Fase 4 / T11)
+│  ├─ audit.ts          # logToolCall() -> línea JSON a stderr (Fase 4 / T10)
 │  ├─ db.ts             # pg.Pool a nivel módulo + query<T>() + closePool()
 │  ├─ rows.ts           # tipos de fila angostos de las 7 tablas
 │  └─ tools/
