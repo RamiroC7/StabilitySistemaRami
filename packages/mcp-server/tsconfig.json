@@ -11,5 +11,11 @@
     "sourceMap": true,
     "declaration": false
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Los .test.ts no van al build: si se compilan, vitest los descubre TAMBIEN
+  // ahi (ademas de en src/) y corre cada test dos veces contra un snapshot
+  // viejo del codigo — causo fallas reales por "Cannot find package
+  // @stability/domain" contra una copia stale de build/ mientras se corrian
+  // los tests de verdad en Windows.
+  "exclude": ["src/**/*.test.ts"]
 }

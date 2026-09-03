@@ -7,6 +7,7 @@ const { getExpiringPlansHandler } = await import("./get-expiring-plans.js");
 
 describe("getExpiringPlansHandler", () => {
   beforeEach(() => {
+    queryMock.mockReset();
     // "Hoy" fijo en Buenos Aires: mediodia UTC = 09:00 AR, lejos de cualquier
     // limite de medianoche (mismo criterio que expiration.test.ts).
     vi.useFakeTimers();

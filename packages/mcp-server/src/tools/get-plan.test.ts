@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
 vi.mock("../db.js", () => ({ query: queryMock }));
@@ -6,6 +6,12 @@ vi.mock("../db.js", () => ({ query: queryMock }));
 const { getPlanHandler } = await import("./get-plan.js");
 
 describe("getPlanHandler", () => {
+  // Sin resetear, toHaveBeenCalledTimes cuenta llamadas de TODOS los tests
+  // anteriores del archivo, no solo del actual.
+  beforeEach(() => {
+    queryMock.mockReset();
+  });
+
   it("plan_id inexistente devuelve isError sin consultar dias ni ejercicios", async () => {
     queryMock.mockResolvedValueOnce([]);
 

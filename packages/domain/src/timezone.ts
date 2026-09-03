@@ -15,6 +15,16 @@ export const DEFAULT_TIME_ZONE = "America/Argentina/Buenos_Aires";
  * hardcodearlo.
  */
 function timeZoneOffsetMs(instantMs: number, timeZone: string): number {
+  // `formatToParts` no expone milisegundos (solo hasta el segundo). Si
+  // `instantMs` trae una fraccion de segundo (p. ej. viene de
+  // "23:59:59.999"), esa fraccion "se cuela" en la resta de abajo como si
+  // fuera parte del offset de la zona horaria — un bug real que se
+  // manifestaba como ~999ms de error en `zonedDateTimeToInstant` (y de ahi,
+  // como un error minusculo pero real en `computeAdherence`). Se redondea
+  // hacia abajo al segundo entero ANTES de formatear para que el offset
+  // resultante sea siempre un multiplo exacto de 1000ms.
+  const wholeSecondMs = Math.floor(instantMs / 1000) * 1000;
+
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hourCycle: "h23",
@@ -27,7 +37,7 @@ function timeZoneOffsetMs(instantMs: number, timeZone: string): number {
   });
 
   const parts: Record<string, string> = {};
-  for (const part of formatter.formatToParts(new Date(instantMs))) {
+  for (const part of formatter.formatToParts(new Date(wholeSecondMs))) {
     parts[part.type] = part.value;
   }
 
@@ -40,7 +50,7 @@ function timeZoneOffsetMs(instantMs: number, timeZone: string): number {
     Number(parts.second),
   );
 
-  return asIfUtc - instantMs;
+  return asIfUtc - wholeSecondMs;
 }
 
 /**

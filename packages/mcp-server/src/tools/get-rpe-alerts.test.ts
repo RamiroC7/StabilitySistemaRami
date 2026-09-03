@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { queryMock } = vi.hoisted(() => ({ queryMock: vi.fn() }));
 vi.mock("../db.js", () => ({ query: queryMock }));
@@ -6,6 +6,10 @@ vi.mock("../db.js", () => ({ query: queryMock }));
 const { getRpeAlertsHandler } = await import("./get-rpe-alerts.js");
 
 describe("getRpeAlertsHandler", () => {
+  beforeEach(() => {
+    queryMock.mockReset();
+  });
+
   it("sin ningun alumno en alerta devuelve alerts: []", async () => {
     queryMock.mockResolvedValueOnce([
       { student_id: "s1", first_name: "Ana", last_name: "Diaz", rpe: 5, completed_at: "2026-01-03T00:00:00.000Z" },
