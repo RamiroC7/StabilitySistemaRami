@@ -223,31 +223,69 @@ Milestones de check-in con el usuario:
 
 Cada tool: implementación + test de contrato (input inválido → `isError` legible; caso feliz → shape correcto). Todas dependen de T10.
 
-- [ ] **T12 — `computeAdherence` en `@stability/domain` + tool `get_student_adherence`**
+- [x] **T12 — `computeAdherence` en `@stability/domain` + tool `get_student_adherence`** — 2026-09-03
+  Resultado: `packages/domain/src/timezone.ts` (helpers `Intl`-based compartidos, sin
+  dependencia nueva: `zonedDateTimeToInstant`, `instantToLocalDateStr`,
+  `instantToLocalDateTimeStr`) + `packages/domain/src/adherence.ts`
+  (`computeAdherence`): `expected = Σ days_per_week × overlap_weeks` por asignación
+  no cancelada que solapa `[from, to]`; `completed` = completions dedupeadas por
+  `(day_number, fecha_local)` en TZ Buenos Aires; `adherence_pct = round(completado/esperado×100)`,
+  **sin cap superior**, `null` (no `0`) si `esperado === 0` — siguiendo el criterio
+  explícito de `requirements.md` (US-2) y `design.md` §Key flows/§Interfaces por sobre
+  el pseudocódigo más informal de `notes-adherence.md` §12 (que sugería cap 100 y
+  dedup con `assignment_id`). 7 tests unitarios en `adherence.test.ts` (rango simple,
+  rango que cruza 2 asignaciones, cancelada ignorada, dedup mismo día, borde de TZ,
+  sin asignación → `null` aunque haya completions crudas, sin cap superior).
+  `tools/get-student-adherence.ts`: valida `from <= to`, resuelve `student_id`
+  (existe + `role='student'`), trae assignments + completions (con margen de ±1-2
+  días UTC para no cortar completions que caen del otro lado por TZ — el filtro
+  exacto lo hace `computeAdherence`), arma la respuesta con `assignments` y
+  `completions` crudas + el `note` fijo (menciona el caveat de la cola offline).
+  4 tests de contrato (`from > to`, `student_id` inexistente, `student_id` de un
+  coach, caso feliz). `npx tsc --noEmit` y `npx eslint` limpios.
   Satisfies: US-2
   Depends on: T3, T10
-  - `packages/domain/src/adherence.ts` implementando la fórmula de design.md §Key flows (fórmula propia: `days_per_week × overlap_weeks`, dedup por `(day_number, fecha local)`, TZ Buenos Aires, excluye `cancelled`). NO se toca la app. El `note` de la respuesta menciona el caveat de la cola offline (`completed_at` puede caer en otra semana ISO — ver `notes-adherence.md`).
-  - Tests unitarios de `computeAdherence` con casos escritos a mano: rango dentro de una asignación; rango que cruza 2 asignaciones; asignación cancelada ignorada; completions duplicadas en el mismo día; borde de TZ (completion a las 23:00 Buenos Aires = 02:00 UTC del día siguiente); sin asignación → `null`.
-  - `tools/get-student-adherence.ts`: valida `from <= to`, resuelve `student_id` (existe + `role='student'`), trae assignments (join `training_plans` para `days_per_week`) + completions del rango convertidas a TZ, llama a `computeAdherence`, arma la respuesta con `assignments`, `completions` crudas y el `note` fijo.
-  Criterio: los tests unitarios pasan; el tool contra la base real devuelve un número coherente con los datos crudos que él mismo reporta; `student_id` inválido → `isError` legible; sin asignación en rango → `adherence_pct: null` + note.
 
-- [ ] **T13 — Tools `get_rpe_alerts` y `get_exercise_progression`**
+- [x] **T13 — Tools `get_rpe_alerts` y `get_exercise_progression`** — 2026-09-03
+  Resultado: `packages/domain/src/rpe.ts` (+ `rpe.test.ts`) — copia exacta de
+  `src/lib/rpeHelpers.ts`/`.test.ts`, con comentario explicando por qué es copia y
+  no import. `ci.yml`: step nuevo "rpe.ts no diverge de rpeHelpers.ts" (`diff` entre
+  el docblock+función de ambos archivos, vía `grep -B1 -A20`); falla el PR si
+  alguien edita una copia sin la otra. `tools/get-rpe-alerts.ts`: trae los últimos 3
+  `workout_completions` por alumno (`row_number() over (partition by student_id
+  order by completed_at desc) <= 3`, join `profiles role='student'`), evalúa cada
+  alumno con `detectRpeAlert` y devuelve solo los que están en alerta con los 3 RPE
+  que la dispararon. `tools/get-exercise-progression.ts`: confirmado contra la
+  migración real que `unaccent` está en el `search_path` de `mcp_readonly` (sin
+  calificar `extensions.`); match aproximado `unaccent(lower(exercise_name)) LIKE
+  unaccent(lower('%'||$2||'%'))` sobre `exercise_weight_logs`, filtros opcionales
+  `from`/`to`, orden por `logged_at`; sin registros → `sets: []` + `message`
+  explicativo, no `isError` (US-3). Tests de contrato para ambos tools. `npx tsc
+  --noEmit` y `npx eslint` limpios.
   Satisfies: US-5, US-3
   Depends on: T10, T0.2
-  - **Copiar** `src/lib/rpeHelpers.ts` + `src/lib/rpeHelpers.test.ts` → `packages/domain/src/rpe.ts` (+ test). NO se toca la app: sigue con su propia copia. Agregar al `ci.yml` un check `diff` que falle si las dos copias divergen (la unificación va al spec de correcciones).
-  - `get_rpe_alerts`: últimos N `workout_completions` por alumno (ordenados `completed_at` DESC) → `detectRpeAlert`. Devuelve solo alumnos en alerta con los valores que la dispararon.
-  - `get_exercise_progression`: `unaccent(lower(exercise_name)) LIKE unaccent(lower('%'||$q||'%'))` sobre `exercise_weight_logs`, filtra por `student_id`, ordena por `logged_at`. `matched_exercise_names` en la respuesta.
-  Criterio: `get_rpe_alerts` coincide con las alertas de `StudentsList` hoy; progresión con nombre parcial y con acento faltante encuentra registros; sin registros → `sets: []` + mensaje.
 
-- [ ] **T14 — Tools `list_students`, `get_expiring_plans`, `get_plan` + registro final**
+- [x] **T14 — Tools `list_students`, `get_expiring_plans`, `get_plan` + registro final** — 2026-09-03
+  Resultado: `tools/list-students.ts`: `profiles` (role='student') LEFT JOIN LATERAL
+  sobre la asignación activa más reciente + `training_plans` para el título, filtro
+  por `is_archived` según `status` (default `active`); lista vacía no es error.
+  `packages/domain/src/expiration.ts` (`getExpirationStatus`): lógica pura extraída
+  de `PlanExpirations.tsx` (sin JSX), con una diferencia deliberada y documentada:
+  "hoy" se calcula en la TZ fija `America/Argentina/Buenos_Aires` (vía `timezone.ts`)
+  en vez de la TZ del navegador/runtime, porque el MCP no corre en el navegador del
+  coach. `tools/get-expiring-plans.ts`: `end_date <= hoy + within_days` (sin cota
+  inferior → incluye vencidas), `days_until_expiry`/`is_overdue` calculados con
+  `getExpirationStatus` en vez de en SQL. `tools/get-plan.ts`: días + ejercicios
+  ordenados por `display_order`, `plan_id` inexistente → `isError`. `tools/index.ts`
+  (`registerAllTools`) monta los **7** tools del contrato (design.md §Interfaces
+  define 7, no 8 — ver nota en el `README.md`). Tests de contrato para los 3 tools.
+  `npx tsc --noEmit`, `npx eslint` y `npm --workspace @stability/domain run
+  check:node-safe` limpios. `npx vitest run` queda pendiente de correr en una
+  terminal real (bloqueado en el entorno de verificación por el problema de
+  binarios nativos de rollup, ya conocido de T10 — nada nuevo de esta tanda lo
+  causa).
   Satisfies: US-1, US-4, US-6
   Depends on: T10
-  - `list_students`: `profiles` + lateral sobre asignaciones activas.
-  - `get_expiring_plans`: `end_date <= now() + within_days`, incluye vencidas con `is_overdue`.
-  - `get_plan`: días + ejercicios ordenados por `display_order`, usa `stage_name` desnormalizado.
-  - `get_expiration_status`: **copiar/extraer** la lógica pura de vencimiento a `packages/domain/src/expiration.ts` desde `src/features/students/PlanExpirations.tsx` (solo la función, sin JSX). NO se refactoriza el consumidor en esta fase.
-  - `registerAllTools` monta los 8.
-  Criterio: los 8 tools aparecen en `tools/list` y responden.
 
   **→ Milestone M3: check-in con el usuario.**
 

@@ -18,6 +18,7 @@ export interface ProfileRow {
   last_name: string;
   email: string;
   role: "student" | "coach";
+  is_archived: boolean;
 }
 
 /** public.training_plans */

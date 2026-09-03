@@ -10,21 +10,25 @@ vencimientos — sin poder escribir nada.
 | Fase | Qué | Estado |
 |------|-----|--------|
 | Fase 3 — esqueleto (T7–T9) | scaffold del paquete, `db.ts`, factory + transport stdio, **1 tool** (`list_plans`) | ✅ |
-| **Fase 4 — auth y auditoría (T10–T11)** | `auth.ts` (token → `profiles.id`, exige `role='coach'`), `audit.ts`, envoltura del dispatch en `create-server.ts` | ✅ este entregable |
-| Fase 5 — los 7 tools restantes (T12–T14) | `get_student_adherence`, `get_exercise_progression`, `get_expiring_plans`, `get_rpe_alerts`, `list_students`, `get_plan` + `@stability/domain` | ⬜ otro dev |
-| Fase 6 — Claude Desktop + HTTP (T15–T16) | config de Claude Desktop, `http.ts` (escrito, no desplegado) | ⬜ otro dev |
+| Fase 4 — auth y auditoría (T10–T11) | `auth.ts` (token → `profiles.id`, exige `role='coach'`), `audit.ts`, envoltura del dispatch en `create-server.ts` | ✅ |
+| **Fase 5 — los 6 tools restantes (T12–T14)** | `get_student_adherence`, `get_exercise_progression`, `get_expiring_plans`, `get_rpe_alerts`, `list_students`, `get_plan` + `@stability/domain` | ✅ este entregable |
+| Fase 6 — Claude Desktop + HTTP (T15–T16) | config de Claude Desktop, `http.ts` (escrito, no desplegado) | ⬜ pendiente |
 
-### Los 8 tools planeados (design.md §Interfaces)
+### Los 7 tools (design.md §Interfaces)
+
+> Nota: el Overview de `design.md` y algunos comentarios previos hablan de "8 tools";
+> la sección §Interfaces (la fuente de verdad de los contratos) define exactamente 7.
+> Se implementaron los 7.
 
 | Tool | US | Estado |
 |------|----|--------|
 | `list_plans` | US-6 | ✅ implementado |
-| `get_plan` | US-6 | ⬜ T14 |
-| `list_students` | US-1 | ⬜ T14 |
-| `get_student_adherence` | US-2 | ⬜ T12 |
-| `get_exercise_progression` | US-3 | ⬜ T13 |
-| `get_expiring_plans` | US-4 | ⬜ T14 |
-| `get_rpe_alerts` | US-5 | ⬜ T13 |
+| `get_plan` | US-6 | ✅ implementado |
+| `list_students` | US-1 | ✅ implementado |
+| `get_student_adherence` | US-2 | ✅ implementado |
+| `get_exercise_progression` | US-3 | ✅ implementado |
+| `get_expiring_plans` | US-4 | ✅ implementado |
+| `get_rpe_alerts` | US-5 | ✅ implementado |
 
 > Deliberadamente **no** hay un tool `run_sql`. Cada tool es una query fija
 > parametrizada; el modelo nunca compone SQL. Ver design.md §Trade-offs.
@@ -169,8 +173,15 @@ packages/mcp-server/
 │  ├─ db.ts             # pg.Pool a nivel módulo + query<T>() + closePool()
 │  ├─ rows.ts           # tipos de fila angostos de las 7 tablas
 │  └─ tools/
-│     ├─ index.ts       # registerAllTools(server)
-│     └─ list-plans.ts  # tool list_plans (US-6)
+│     ├─ index.ts                       # registerAllTools(server) — monta los 7
+│     ├─ errors.ts                      # toolError() compartido (isError: true)
+│     ├─ list-plans.ts                  # tool list_plans (US-6)
+│     ├─ get-plan.ts                    # tool get_plan (US-6)
+│     ├─ list-students.ts               # tool list_students (US-1)
+│     ├─ get-student-adherence.ts       # tool get_student_adherence (US-2)
+│     ├─ get-exercise-progression.ts    # tool get_exercise_progression (US-3)
+│     ├─ get-expiring-plans.ts          # tool get_expiring_plans (US-4)
+│     └─ get-rpe-alerts.ts              # tool get_rpe_alerts (US-5)
 ├─ .env.example
 ├─ tsconfig.json        # extends ../../tsconfig.base.json, module nodenext, outDir build/
 └─ package.json
