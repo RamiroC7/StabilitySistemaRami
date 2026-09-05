@@ -37,6 +37,19 @@ jobs:
       - name: Node-safe gate (@stability/domain)
         run: npm run check:node-safe
 
+      - name: rpe.ts no diverge de rpeHelpers.ts
+        # packages/domain/src/rpe.ts (T13) es una COPIA deliberada de
+        # src/lib/rpeHelpers.ts (no se importa para no tocar la app en esta
+        # fase — ver design.md > Trade-offs > "Alcance de packages/domain").
+        # Este step compara el docblock + la funcion (todo lo que viene desde
+        # "Detects if the last 3 RPE...") en ambos archivos; si alguien edita
+        # una copia y no la otra, CI falla ANTES del merge.
+        run: |
+          diff \
+            <(grep -B1 -A20 "Detects if the last 3 RPE" src/lib/rpeHelpers.ts) \
+            <(grep -B1 -A20 "Detects if the last 3 RPE" packages/domain/src/rpe.ts) \
+          || (echo "::error::packages/domain/src/rpe.ts (copia) diverge de src/lib/rpeHelpers.ts (original). Actualiza la copia — ver el comentario en rpe.ts." && exit 1)
+
       - name: Correr tests (Vitest)
         run: npx vitest run
 
