@@ -21,6 +21,7 @@ const StudentsList = lazy(() => import("@/features/students/StudentsList"));
 const BusinessMetrics = lazy(
   () => import("@/features/metrics/BusinessMetrics"),
 );
+const AdminChat = lazy(() => import("@/features/assistant/AdminChat"));
 const Library = lazy(() => import("@/features/library/Library"));
 const NewPlan = lazy(() => import("@/features/plans/NewPlan"));
 const StudentProfile = lazy(() => import("@/features/students/StudentProfile"));
@@ -93,6 +94,10 @@ export const router = createBrowserRouter([
       {
         path: "dashboard",
         element: withSuspense(BusinessMetrics),
+      },
+      {
+        path: "asistente",
+        element: withSuspense(AdminChat),
       },
       {
         path: "biblioteca",

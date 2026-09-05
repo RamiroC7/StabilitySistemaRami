@@ -5,6 +5,7 @@ import {
   Calendar,
   Dumbbell,
   BarChart2,
+  Sparkles,
   LogOut,
   User,
   ChevronLeft,
@@ -22,6 +23,7 @@ const navigation: { name: string; href: string; icon: LucideIcon }[] = [
   { name: "Biblioteca", href: "/biblioteca", icon: Dumbbell },
   { name: "Vencimientos", href: "/asignaciones", icon: Calendar },
   { name: "Estadísticas", href: "/dashboard", icon: BarChart2 },
+  { name: "Asistente IA", href: "/asistente", icon: Sparkles },
 ];
 
 interface SidebarProps {
@@ -46,6 +48,7 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
       "/biblioteca": () => import("@/features/library/Library"),
       "/asignaciones": () => import("@/features/students/PlanExpirations"),
       "/dashboard": () => import("@/features/metrics/BusinessMetrics"),
+      "/asistente": () => import("@/features/assistant/AdminChat"),
     };
     map[href]?.().catch(() => {});
   };
