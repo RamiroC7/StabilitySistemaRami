@@ -1,6 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap");
+/* Las fuentes se cargan desde index.html en una sola request no bloqueante.
+   No usar @import url() externo acá: bloquea el render y encadena
+   (index.css -> descubre el import -> recién ahí pide la fuente). */
 
 @tailwind base;
 @tailwind components;

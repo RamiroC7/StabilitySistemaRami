@@ -65,7 +65,6 @@ module.exports = {
       fontFamily: {
         display: ["Lexend", "Inter", "sans-serif"],
         sans: ["Inter", "sans-serif"],
-        serif: ["Playfair Display", "serif"],
       },
       borderRadius: {
         DEFAULT: "0.25rem",

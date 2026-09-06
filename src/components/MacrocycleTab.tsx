@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import jsPDF from "jspdf";
 import {
   useMacrocycle,
   useMacrocycleObjectives,
@@ -331,6 +330,8 @@ async function exportMacrocyclePDF(
   cycleNumber: number,
   totalCycles: number,
 ) {
+  // jspdf se carga sólo al exportar, no en el arranque de la app.
+  const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF();
   const PAGE_WIDTH = doc.internal.pageSize.getWidth();
   const PAGE_HEIGHT = doc.internal.pageSize.getHeight();
@@ -802,7 +803,12 @@ export function MacrocycleTab({
       studentName,
       currentIndex + 1,
       macrocycles.length,
-    ).finally(() => setExportingPDF(false));
+    )
+      .catch((err) => {
+        // Incluye el caso de que falle el import() dinámico de jspdf (offline).
+        console.error("MacrocycleTab: error exportando PDF", err);
+      })
+      .finally(() => setExportingPDF(false));
   }
 
   // ── Loading ──────────────────────────────────────────────────────────────
