@@ -388,7 +388,7 @@ export default function TrainingHome() {
 
             {/* CTA button — hidden when day is already completed */}
             {isCurrentDayCompleted ? (
-              <div className="w-full flex items-center justify-center gap-2 bg-emerald-500/90 text-white font-bold text-sm py-3.5 rounded-xl min-h-[48px]">
+              <div className="w-full flex items-center justify-center gap-2 bg-white/15 backdrop-blur-sm border border-white/25 text-white font-bold text-sm py-3.5 rounded-xl min-h-[48px]">
                 <CheckCircle2 size={18} strokeWidth={2.5} />
                 DÍA COMPLETADO
               </div>
