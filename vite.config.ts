@@ -209,13 +209,11 @@ export default defineConfig(({ mode }) => ({
           if (id.includes("node_modules/recharts/")) {
             return "vendor-charts";
           }
-          // PDF / canvas export — only Library page
-          if (
-            id.includes("node_modules/jspdf/") ||
-            id.includes("node_modules/html2canvas/")
-          ) {
-            return "vendor-pdf";
-          }
+          // jspdf / html2canvas: NO se agrupan acá a propósito. Se importan de
+          // forma dinámica (await import) desde useExportPlanPDF y MacrocycleTab,
+          // así Rollup los deja en un chunk async que sólo se baja al exportar.
+          // Agruparlos acá volvía a meter el helper __vitePreload en ese chunk y
+          // el entry terminaba dependiendo de él (modulepreload en index.html).
           // DnD — only NewPlan page
           if (id.includes("node_modules/@dnd-kit/")) {
             return "vendor-dnd";

@@ -1,6 +1,4 @@
 import { useRef, useState, useCallback } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import { supabase } from "../lib/supabase";
 import type {
   PlanPDFData,
@@ -60,6 +58,13 @@ async function generatePdfFromElement(
   element: HTMLElement,
   fileName: string,
 ): Promise<void> {
+  // jspdf + html2canvas (~170 KB gzip juntos) se cargan sólo al exportar,
+  // nunca en el arranque de la app.
+  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+    import("jspdf"),
+    import("html2canvas"),
+  ]);
+
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
