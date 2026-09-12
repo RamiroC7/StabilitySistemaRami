@@ -27,7 +27,7 @@ Milestones de check-in con el usuario:
 
 ## Fase A — Workspace y base de datos
 
-- [ ] **T0 — Scaffold `packages/gym-owner-mcp` como workspace nuevo**
+- [x] **T0 — Scaffold `packages/gym-owner-mcp` como workspace nuevo**
   Satisfies: US-8
   Notes: `package.json` (`@stability/gym-owner-mcp`, privado), `tsconfig.json`
   extends `tsconfig.base.json`. Como `"workspaces": ["packages/*"]` ya está en
@@ -35,6 +35,20 @@ Milestones de check-in con el usuario:
   desde la raíz sigue sin romper el build/lint/test de la app ni de
   `packages/mcp-server` (misma diligencia que hizo la Fase 1 del spec
   hermano — comparar antes/después).
+  Resultado: creados `package.json`, `tsconfig.json`, `src/index.ts`
+  (placeholder) y `.gitignore` en `packages/gym-owner-mcp`, sin dependencias
+  de runtime (solo `devDependencies`: `@types/node`, `typescript`, mismas
+  versiones que `packages/mcp-server`). `npm install` desde la raíz agregó 1
+  paquete; `package-lock.json` solo sumó el link del workspace nuevo (más
+  metadata `"peer": true` en binarios opcionales de `esbuild`, sin bump de
+  versiones). Verificado desde la raíz: `npm run build` (Vite, igual que
+  antes), `npm run lint` (0 errores, mismo warning preexistente de
+  `RegisterPage.tsx`), `npx vitest run` (17 archivos / 72 tests, igual que
+  antes), `npm run check:node-safe` (OK, 10 archivos de `packages/domain`).
+  El root `tsconfig.json` (`tsc -b`) no referencia `packages/*`, así que no
+  compila el paquete nuevo; se verificó aparte con
+  `npm --workspace @stability/gym-owner-mcp run typecheck` y `run build`
+  (ambos OK). `packages/mcp-server` y `packages/domain` quedaron intactos.
 
 - [ ] **T1 — SQL de la migración: rol `gym_owner_readonly`, schema `gym_mcp`,
   rol `gym_mcp_service`, tablas de `gym_mcp`**
