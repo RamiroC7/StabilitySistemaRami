@@ -486,12 +486,38 @@ Milestones de check-in con el usuario:
   no se toca en la Fase C, por instrucción explícita) — la verificación
   end-to-end en memoria queda para T16.
 
-- [ ] **T16 — Verificación M2: flujo OAuth completo de punta a punta**
+- [x] **T16 — Verificación M2: flujo OAuth completo de punta a punta**
   Depends on: T15
   Notes: contra un cliente de prueba (Inspector con soporte OAuth, o un
   script manual) — DCR → login → code → token → `query_gym_data` exitoso;
   repetir con un token revocado a mano (`UPDATE gym_mcp.access_tokens SET
   revoked_at = now()`) y confirmar rechazo inmediato.
+  Resultado (2026-09-12): **verificación 100% con mocks, SIN login real —
+  ningún test de esta task, ni de toda la Fase C, se conectó a Supabase Auth
+  de verdad, creó una cuenta real, ni usó una password real de ningún
+  coach.** Creado `packages/gym-owner-mcp/src/oauth/oauth-flow.test.ts`, un
+  test de integración liviano con `gym_mcp.js` mockeado (`vi.mock("../db.js")`
+  a nivel de `queryService`/`queryReadonly`) que corre la secuencia completa
+  en memoria usando las funciones reales de T10-T15 (no reimplementa nada):
+  `registerClient` (DCR) → `handleAuthorizeCallback` con
+  `verifySupabaseSession` inyectado como `vi.fn()` fijo que devuelve
+  `{ id: '<uuid-fake>' }` (simulando un login ya resuelto, nunca una llamada
+  real a `/auth/v1/user`) y el mock de `queryReadonly` devolviendo un perfil
+  `role='coach'`/`is_archived=false` → extrae el `code` real de la
+  `redirectTo` devuelta → `exchangeAuthorizationCode` con el `code_verifier`
+  correcto (PKCE real, calculado con `createHash('sha256').digest('base64url')`,
+  no mockeado) → `resolveBearerToken` con el `access_token` recién emitido,
+  confirmando que devuelve `{ profileId, label }` con el `coach_profile_id`
+  y `coach_label` esperados. Caso negativo: revocación simulada — se mockea
+  `queryService` para que el SELECT de `resolveBearerToken` devuelva `[]`
+  (tal como pasaría de verdad después de `UPDATE gym_mcp.access_tokens SET
+  revoked_at = now() ...`, porque el filtro `revoked_at IS NULL` vive en el
+  propio SQL) y se confirma que devuelve `null`. La validación con un coach
+  humano real y un cliente MCP real (Claude Desktop/claude.ai) queda
+  explícitamente para **T19 (Fase D)** — no se adelantó nada de eso acá, ni
+  se tocó el `.env` real del paquete en ningún momento de la Fase C. `npx tsc
+  --noEmit` y `npx vitest run packages/gym-owner-mcp` (10 archivos, 51 tests)
+  sin errores.
 
   **→ Milestone M2: check-in con el usuario.**
 
