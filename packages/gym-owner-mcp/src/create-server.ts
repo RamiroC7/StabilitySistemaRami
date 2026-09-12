@@ -13,6 +13,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/server";
 import type { CoachIdentity } from "./types.js";
+import { registerQueryGymData } from "./tools/query-gym-data.js";
 
 export type { CoachIdentity } from "./types.js";
 
@@ -56,11 +57,7 @@ export function createServer(identity: CoachIdentity): McpServer {
 
   registerResumenSemanalPrompt(server);
   registerBrandBriefResource(server);
-
-  // T7 (query_gym_data, US-1/US-5) llama aca a `registerQueryGymData(server,
-  // identity)`. Se deja afuera en T5 a proposito: T7 depende de T5 y es quien
-  // agrega la tool, no al reves.
-  void identity;
+  registerQueryGymData(server, identity);
 
   return server;
 }

@@ -198,7 +198,7 @@ Milestones de check-in con el usuario:
   con un spy de `console.error`). `npx tsc --noEmit` y
   `npx vitest run packages/gym-owner-mcp` (4 tests) sin errores.
 
-- [ ] **T7 — Tool `query_gym_data`**
+- [x] **T7 — Tool `query_gym_data`**
   Satisfies: US-1, US-5
   Depends on: T5, T6
   Notes: Zod `{ question: string().min(1), sql: string().min(1) }`; llama
@@ -208,6 +208,30 @@ Milestones de check-in con el usuario:
   error de sintaxis → `isError` legible sin credenciales; intento de
   `DELETE`/`UPDATE` → falla con el error de Postgres, no con una validación de
   app.
+  Resultado: creado `packages/gym-owner-mcp/src/tools/query-gym-data.ts` con
+  `createQueryGymDataHandler(identity)` (handler puro, exportado por separado
+  de `registerQueryGymData` — mismo patrón que `listStudentsHandler` de
+  `packages/mcp-server`) y `registerQueryGymData(server, identity)`. El
+  handler llama `insertAuditRow` SIN try/catch (fail-closed: el error se
+  propaga y el framework de `@modelcontextprotocol/server` lo convierte en
+  `isError` — confirmado leyendo el dispatch real de `tools/call` en
+  `node_modules/@modelcontextprotocol/server/dist/mcp-*.mjs`, que envuelve
+  `executeToolHandler` en un solo `try/catch` y arma
+  `{ isError: true, content: [...] }` con cualquier excepción no atrapada, así
+  que no hacía falta armar un try/catch propio para ese paso), corre
+  `queryReadonly(sql)`, y llama `updateAuditRow` best-effort tanto en el caso
+  feliz como en el de error de SQL. `create-server.ts` (T5) actualizado para
+  llamar `registerQueryGymData(server, identity)`, sacando el placeholder.
+  Test `query-gym-data.test.ts` (`vi.mock("../db.js", ...)` +
+  `vi.mock("../audit.js", ...)` con `vi.hoisted`): caso feliz (row_count
+  correcto, `updateAuditRow` con `error: null`); fail-closed — `insertAuditRow`
+  rechaza → el handler propaga el error y `queryReadonly` NUNCA se llama
+  (`expect(queryReadonlyMock).not.toHaveBeenCalled()`, el test más importante
+  de los tres, US-5); `queryReadonly` rechaza → `isError: true`, mensaje sin
+  `postgres(ql)?://` ni `password`, y `updateAuditRow` recibe el error.
+  `npx tsc --noEmit` y `npx vitest run packages/gym-owner-mcp` (2 archivos, 7
+  tests) sin errores. `npm run lint` desde la raíz: 0 errores (mismo warning
+  preexistente de `RegisterPage.tsx`, nada nuevo).
 
 - [ ] **T8 — Endpoint HTTP con `mcp-handler` (Streamable HTTP stateless)**
   Satisfies: US-1, US-6
