@@ -152,12 +152,31 @@ Milestones de check-in con el usuario:
   `public.profiles`, `queryService` con `n = 5` tablas de `gym_mcp`).
   `npm --workspace @stability/gym-owner-mcp run typecheck` sin errores.
 
-- [ ] **T5 — `create-server.ts`: factory + `instructions`/`prompts`/`resources`**
+- [x] **T5 — `create-server.ts`: factory + `instructions`/`prompts`/`resources`**
   Satisfies: US-9
   Depends on: T4
   Notes: instructions de negocio (qué es Stability, tono), 1 prompt de
   ejemplo ("resumen semanal"), el Brand Brief como resource leyendo un archivo
   estático del repo (sin integración con Plane en esta iteración, por US-9).
+  Resultado: creados `packages/gym-owner-mcp/src/types.ts` (tipo
+  `CoachIdentity` — `{ profileId, label }`, con comentario explícito de que es
+  un placeholder de desarrollo hasta T15, cuando el middleware de auth va a
+  resolver la identidad real por request) y
+  `packages/gym-owner-mcp/src/create-server.ts` (`createServer(identity)`,
+  `identity` obligatorio). Registra `instructions` de negocio (qué es
+  Stability, qué tablas hay incluida `student_profiles`, y que las consultas
+  quedan auditadas), el prompt `resumen_semanal` (sin argumentos, guía de
+  texto que referencia `query_gym_data` sin ejecutar SQL) y el resource
+  `brand-brief` (`gym-owner-mcp://brand-brief`) que lee
+  `packages/gym-owner-mcp/resources/brand-brief.md` (creado con placeholder:
+  título, nota de que la sync con Plane queda fuera de alcance por US-9, y
+  secciones vacías `## Tono` / `## Paleta` / `## Terminología`). Todavía NO
+  registra tools — el comentario en `createServer` deja explícito que T7 llama
+  ahí a `registerQueryGymData(server, identity)`. Agregadas
+  `@modelcontextprotocol/server` (2.0.0, misma versión que
+  `packages/mcp-server`) y `zod` (^4.3.6) como dependencias reales del
+  paquete. `npm --workspace @stability/gym-owner-mcp run typecheck` sin
+  errores.
 
 - [ ] **T6 — `audit.ts`: log-antes-de-ejecutar, fail-closed**
   Satisfies: US-5
