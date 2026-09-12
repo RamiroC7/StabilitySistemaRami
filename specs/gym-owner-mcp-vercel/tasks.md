@@ -348,7 +348,7 @@ Milestones de check-in con el usuario:
   escapar en el HTML resultante. `npx tsc --noEmit` y
   `npx vitest run packages/gym-owner-mcp` (5 archivos, 21 tests) sin errores.
 
-- [ ] **T13 — `POST /authorize/callback`: verificar identidad y emitir código**
+- [x] **T13 — `POST /authorize/callback`: verificar identidad y emitir código**
   Satisfies: US-2
   Depends on: T12
   Notes: `GET {SUPABASE_URL}/auth/v1/user` con el token de la sesión →
@@ -356,6 +356,46 @@ Milestones de check-in con el usuario:
   `gym_owner_readonly`) → si no es coach activo, `403` sin emitir código; si
   es coach, genera `code`, guarda en `gym_mcp.access_grants` (hash, PKCE
   challenge, TTL 5 min), redirect con `?code=...&state=...`.
+  Resultado: creados `packages/gym-owner-mcp/src/oauth/verify-supabase-session.ts`
+  (`verifySupabaseSession(token, fetchImpl = fetch)` — `GET
+  {SUPABASE_URL}/auth/v1/user` con `Authorization`/`apikey`, `fetchImpl`
+  inyectable para test sin red real; `null` ante cualquier motivo de rechazo:
+  no-ok, sin `id`, red caída, o faltan `SUPABASE_URL`/`SUPABASE_ANON_KEY`) y
+  `packages/gym-owner-mcp/src/oauth/authorize-callback.ts` con
+  `handleAuthorizeCallback(input, deps)` (función pura con las 4 dependencias
+  inyectadas: `verifySupabaseSession`, `findClient`, `queryReadonly`,
+  `insertAccessGrant` — así los tests pasan `vi.fn()` fake sin mockear módulos
+  enteros), `insertAccessGrant` (implementación real: genera `code` de 32
+  bytes hex, lo guarda hasheado sha256 en `gym_mcp.access_grants` con
+  `expires_at = now() + 5 minutos`, devuelve el `code` en claro UNA vez) y
+  `authorizeCallback` (wiring real para `http.ts`, con las dependencias de
+  producción). Orden de validación tal cual el spec: `findClient` +
+  `redirect_uri` matchea PRIMERO (400 `invalid_client`, sin llamar a
+  Supabase); luego `verifySupabaseSession` (401 `access_denied` si `null`);
+  luego `SELECT role, is_archived FROM public.profiles` — decisión chica:
+  la query NO trae `first_name`/`last_name` acá (a diferencia del `SELECT`
+  sugerido en el prompt/design.md), porque `coach_label` se resuelve aparte
+  en T14 en el momento de `/token` — evita pedir columnas que ni siquiera se
+  usarían si el flujo termina en `access_denied` en este paso, documentado en
+  un comentario. Perfil inexistente, `role != 'coach'`, o `is_archived` → los
+  tres devuelven el mismo `access_denied`/403 SIN insertar ningún grant (US-2,
+  el criterio más importante de la Fase C). Coach activo → inserta el grant y
+  devuelve `{ redirectTo: "<redirect_uri>?code=...&state=..." }`. Test
+  `authorize-callback.test.ts` (deps 100% fake, sin `vi.mock` de módulos
+  salvo un mock mínimo de `../db.js` para que el import estático de
+  `insertAccessGrant`/`authorizeCallback` no reviente por falta de env vars
+  en el entorno de test): `client_id`/`redirect_uri` inválido →
+  `invalid_client` con `verifySupabaseSession` NUNCA llamado; sesión de
+  Supabase inválida → `access_denied` sin insertar grant; `role='student'` →
+  `access_denied` sin insertar grant; coach archivado → `access_denied` sin
+  insertar grant; perfil inexistente → `access_denied` sin insertar grant;
+  coach activo → inserta el grant con los params correctos y devuelve
+  `redirectTo` con `code` y `state`. Test `verify-supabase-session.test.ts`
+  aparte (`fetchImpl` mockeado con `vi.fn()`, nunca red real): 200 con `id` →
+  identidad; no-ok, red caída, sin `id`, o faltan env vars → `null` en los
+  cuatro casos (el último sin siquiera llamar a `fetchImpl`). `npx tsc
+  --noEmit` y `npx vitest run packages/gym-owner-mcp` (7 archivos, 33 tests)
+  sin errores.
 
 - [ ] **T14 — `POST /token`: intercambio de código y refresh**
   Satisfies: US-2
