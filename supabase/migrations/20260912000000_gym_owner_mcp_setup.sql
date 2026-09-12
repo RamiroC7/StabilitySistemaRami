@@ -128,8 +128,15 @@ alter table gym_mcp.query_audit_log owner to gym_mcp_service;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. Aislamiento entre roles (léase junto con design.md §Data model):
---    * gym_mcp_service NO tiene USAGE sobre public — no puede tocar ninguna
---      tabla de la app.
+--    * gym_mcp_service NO tiene ningún GRANT de tabla (ni SELECT ni ningún
+--      otro) sobre public — no puede leer ni escribir ninguna tabla de la
+--      app. Nota: Postgres otorga USAGE sobre el schema public a PUBLIC por
+--      default (todo rol lo hereda); eso no alcanza para leer datos sin un
+--      grant de tabla, así que el error real al intentar
+--      `select * from public.profiles` va a ser "permission denied for
+--      table profiles", no "for schema public". No conviene revocarle USAGE
+--      a PUBLIC para "cerrar" esto — es un cambio global que afectaría a
+--      todos los roles del proyecto, no solo a este.
 --    * gym_owner_readonly NO tiene ningún acceso a gym_mcp — no ve tokens ni
 --      el audit log de coaches.
 -- ─────────────────────────────────────────────────────────────────────────────

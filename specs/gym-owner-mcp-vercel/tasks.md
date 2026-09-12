@@ -95,8 +95,9 @@ Milestones de check-in con el usuario:
   tablas de `public` (incluida `student_profiles`, por la decisión de
   alcance), que `INSERT`/`UPDATE`/`DELETE`/`CREATE TABLE` fallan. Como rol
   `gym_mcp_service` — confirmar que puede `INSERT`/`SELECT` en las tablas de
-  `gym_mcp`, y que **no** tiene ni `USAGE` sobre `public` (debe fallar con
-  `permission denied for schema public`).
+  `gym_mcp`, y que **no** puede leer ninguna tabla de `public` (debe fallar
+  con `permission denied for table ...` — tiene `USAGE` de schema por el
+  default de Postgres a `PUBLIC`, pero ningún grant de tabla).
 
 ---
 
