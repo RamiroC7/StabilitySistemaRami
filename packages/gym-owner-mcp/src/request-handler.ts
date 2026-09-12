@@ -409,7 +409,13 @@ export async function handleRequest(req: http.IncomingMessage, res: http.ServerR
     return sendWebResponse(await handleToken(request), res);
   }
 
-  if (url.pathname !== "/mcp") {
+  // `/mcp` es la ruta "oficial" (la que declara `buildProtectedResourceMetadata`
+  // como `resource`), pero se encontró en el primer login real que el cliente
+  // MCP de Claude, cuando el usuario carga el conector con la URL pelada
+  // (sin `/mcp`), manda el tráfico del protocolo (`POST`/`GET`) directo a la
+  // raíz. Se acepta `/` como alias de `/mcp` por robustez — no depende de que
+  // el usuario haya pegado la URL exacta con el sufijo.
+  if (url.pathname !== "/mcp" && url.pathname !== "/") {
     res.statusCode = 404;
     res.end();
     return;
