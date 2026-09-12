@@ -178,7 +178,7 @@ Milestones de check-in con el usuario:
   paquete. `npm --workspace @stability/gym-owner-mcp run typecheck` sin
   errores.
 
-- [ ] **T6 — `audit.ts`: log-antes-de-ejecutar, fail-closed**
+- [x] **T6 — `audit.ts`: log-antes-de-ejecutar, fail-closed**
   Satisfies: US-5
   Depends on: T4, T2
   Notes: `insertAuditRow({coach_profile_id, question, sql})` contra
@@ -186,6 +186,17 @@ Milestones de check-in con el usuario:
   el SQL de datos. `updateAuditRow(id, {row_count, duration_ms, error})`
   best-effort después de ejecutar (no bloquea la respuesta si falla el
   update).
+  Resultado: creado `packages/gym-owner-mcp/src/audit.ts` con
+  `insertAuditRow` (INSERT vía `queryService`, devuelve `id`, deja propagar
+  cualquier error sin try/catch — es lo que hace fail-closed a US-5) y
+  `updateAuditRow` (UPDATE vía `queryService`, try/catch propio que solo hace
+  `console.error` si falla, nunca tira). Test `audit.test.ts`
+  (`vi.mock("./db.js", ...)`, mismo patrón que `list-students.test.ts`): caso
+  feliz de `insertAuditRow` (devuelve el `id`), `insertAuditRow` propaga el
+  error si `queryService` rechaza, caso feliz de `updateAuditRow`, y
+  `updateAuditRow` no tira si `queryService` rechaza (solo loguea, verificado
+  con un spy de `console.error`). `npx tsc --noEmit` y
+  `npx vitest run packages/gym-owner-mcp` (4 tests) sin errores.
 
 - [ ] **T7 — Tool `query_gym_data`**
   Satisfies: US-1, US-5
