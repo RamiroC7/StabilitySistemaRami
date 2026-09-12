@@ -50,7 +50,7 @@ Milestones de check-in con el usuario:
   `npm --workspace @stability/gym-owner-mcp run typecheck` y `run build`
   (ambos OK). `packages/mcp-server` y `packages/domain` quedaron intactos.
 
-- [ ] **T1 — SQL de la migración: rol `gym_owner_readonly`, schema `gym_mcp`,
+- [x] **T1 — SQL de la migración: rol `gym_owner_readonly`, schema `gym_mcp`,
   rol `gym_mcp_service`, tablas de `gym_mcp`**
   Satisfies: US-3, US-4
   Depends on: T0
@@ -58,6 +58,27 @@ Milestones de check-in con el usuario:
   `20260902000000_mcp_server_setup.sql`), con el SQL completo de
   design.md §Data model. Los passwords de ambos roles se generan aparte y NO
   se commitean (igual que con `mcp_readonly`).
+  Resultado: creado `supabase/migrations/20260912000000_gym_owner_mcp_setup.sql`
+  con: (1) docblock inicial (qué hace, aditivo, no toca `mcp_readonly` /
+  `packages/mcp-server` / la app / RLS existente, nota de passwords aparte);
+  (2) `CREATE ROLE gym_owner_readonly` (LOGIN, sin password, NOSUPERUSER/
+  NOCREATEDB/NOCREATEROLE/NOINHERIT/NOREPLICATION, BYPASSRLS, CONNECTION LIMIT
+  10) + los 3 `ALTER ROLE ... SET`; (3) grants de solo lectura sobre `public`
+  (`GRANT USAGE`, `GRANT SELECT ON ALL TABLES`, `ALTER DEFAULT PRIVILEGES`);
+  (4) `CREATE SCHEMA IF NOT EXISTS gym_mcp`; (5) `CREATE ROLE gym_mcp_service`
+  (LOGIN, sin password, NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOINHERIT/
+  NOREPLICATION/NOBYPASSRLS, CONNECTION LIMIT 10) + `ALTER ROLE ... SET
+  statement_timeout`; (6) `GRANT USAGE, CREATE ON SCHEMA gym_mcp`; (7) las 5
+  tablas de `gym_mcp` (`oauth_clients`, `access_grants`, `access_tokens`,
+  `refresh_tokens`, `query_audit_log`) con columnas exactas de design.md, cada
+  una con `ALTER TABLE ... OWNER TO gym_mcp_service` (enfoque elegido en vez de
+  `GRANT ALL` explícito por tabla, documentado en un comentario); (8)
+  comentario final explícito de aislamiento entre roles. Revisión estática
+  contra design.md §Data model: confirmado que `gym_owner_readonly` solo tiene
+  `USAGE` + `SELECT` sobre `public` (sin INSERT/UPDATE/DELETE/DDL, sin acceso a
+  `gym_mcp`) y que `gym_mcp_service` no tiene ningún grant sobre `public` (solo
+  `USAGE, CREATE` sobre `gym_mcp` + ownership de sus 5 tablas). No se aplicó a
+  ninguna base (eso es T2, pendiente de aprobación explícita).
 
 - [ ] **T2 — Aplicar la migración a producción**
   Satisfies: US-3, US-4
