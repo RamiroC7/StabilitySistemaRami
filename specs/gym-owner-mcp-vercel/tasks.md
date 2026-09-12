@@ -118,7 +118,7 @@ Milestones de check-in con el usuario:
 
 ## Fase B — Skeleton del server MCP (sin auth todavía)
 
-- [ ] **T4 — `db.ts`: dos pools de `pg`** (`gym_owner_readonly`,
+- [x] **T4 — `db.ts`: dos pools de `pg`** (`gym_owner_readonly`,
   `gym_mcp_service`)
   Satisfies: (base de US-1, US-5)
   Depends on: T0
@@ -126,6 +126,31 @@ Milestones de check-in con el usuario:
   módulo, errores sanitizados (nunca exponer la connection string), TODO
   documentado sobre el cert real del pooler si se usa `rejectUnauthorized:
   false` en el arranque.
+  Resultado: creado `packages/gym-owner-mcp/src/db.ts` con dos pools de `pg` a
+  nivel de módulo (`gym_owner_readonly` vía `GYM_OWNER_RO_DATABASE_URL`,
+  `gym_mcp_service` vía `GYM_MCP_SERVICE_DATABASE_URL`), cada uno falla al
+  importar con un mensaje claro si falta su env var. Errores sanitizados
+  contra las passwords/connection strings de AMBOS roles (no solo el pool que
+  falló). `queryReadonly<T>` / `queryService<T>` devuelven `result.rows` y
+  relanzan `Error` sanitizado; `closePools()` cierra ambos. `ssl:
+  { rejectUnauthorized: false }` en los dos, con el mismo TODO de seguridad
+  sobre el cert real del pooler que `packages/mcp-server/src/db.ts`. Tamaño de
+  pool `max: 3` (en vez de `max: 2`) con `idleTimeoutMillis` /
+  `connectionTimeoutMillis` de 10s, documentado en comentario: a diferencia
+  del stdio efímero de `packages/mcp-server`, acá el módulo puede recibir
+  invocaciones serverless concurrentes. También creado
+  `packages/gym-owner-mcp/src/load-env.ts` (mismo patrón que
+  `packages/mcp-server/src/load-env.ts`), reusable para las tasks de Fase B/C
+  que necesiten cargar el `.env` del paquete en dev. Agregadas dependencias
+  reales `pg`/`@types/pg` (mismas versiones que `packages/mcp-server`) al
+  `package.json` del paquete; `npm install` desde la raíz dejó
+  `package-lock.json` con un diff limpio (solo las dos entradas nuevas del
+  workspace, sin bump de versiones existentes). Smoke test manual (script
+  descartable corrido una vez con `npx tsx` y borrado después, cargando el
+  `.env` real del paquete): confirmado — ambos pools conectan contra
+  producción y devuelven los conteos esperados (`queryReadonly` sobre
+  `public.profiles`, `queryService` con `n = 5` tablas de `gym_mcp`).
+  `npm --workspace @stability/gym-owner-mcp run typecheck` sin errores.
 
 - [ ] **T5 — `create-server.ts`: factory + `instructions`/`prompts`/`resources`**
   Satisfies: US-9
