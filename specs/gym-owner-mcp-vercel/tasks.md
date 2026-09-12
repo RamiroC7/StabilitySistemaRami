@@ -655,10 +655,29 @@ Milestones de check-in con el usuario:
 
 ## Fase E — Cierre
 
-- [ ] **T22 — README de `packages/gym-owner-mcp`**
+- [x] **T22 — README de `packages/gym-owner-mcp`**
   Notes: cómo correr local (Inspector), env vars necesarias, cómo generar un
   password de rol nuevo, cómo revocar el acceso de un coach (SQL manual),
   checklist de deploy.
+  Resultado: creado `packages/gym-owner-mcp/README.md`, escrito a partir de
+  requirements.md/design.md/tasks.md completo (T0-T20), `.env.example`,
+  `package.json`, `vercel.json`, `api/handler.ts`, la migración SQL y
+  `docs/gym-owner-mcp-access.md` — no a partir de lo planeado al inicio.
+  Cubre: qué es y por qué es un sistema separado de `packages/mcp-server`;
+  arquitectura en 3-4 líneas con link a `design.md`; cómo correr local
+  (`.env`, `npm run dev:http`, Inspector, y la aclaración de que el login
+  OAuth completo no se prueba solo con el Inspector); deploy a Vercel
+  (standalone, `vercel.json`/`api/handler.ts`, por qué el `tsconfig.json` es
+  autocontenido, comandos reales con `vercel env add ... production` por
+  stdin); los 3 bugs reales de T18 (allowlist de host/origin, el cuelgue del
+  body como stream, el alias `/` → `/mcp`); operación (rotar password de un
+  rol, revocar un coach puntual, agregar un coach nuevo, checklist de
+  `docs/gym-owner-mcp-access.md` filtrado a lo que ya aplica); qué no está
+  implementado (reports Fase 2, multi-tenancy Fase 3, imágenes/alertas Fase
+  3, rotación de refresh tokens, límite de filas); link final a
+  `specs/gym-owner-mcp-vercel/`. Verificado a mano que no quedó ninguna
+  password ni connection string real — solo placeholders (`<generado>`,
+  `<rol>`, `<NAME>`, `<uuid>`).
 
 - [ ] **T23 — Marcar los specs como Done**
   Depends on: T21
