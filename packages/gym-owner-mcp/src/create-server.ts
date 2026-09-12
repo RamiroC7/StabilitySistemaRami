@@ -2,11 +2,10 @@
  * Factory del server MCP remoto para coaches (US-9, design.md > Interfaces).
  *
  * A diferencia de `packages/mcp-server/src/create-server.ts` (transport stdio,
- * sin identidad por request), este server corre en Vercel y en T15 va a
- * resolver la identidad real del coach por request (Bearer token → middleware
- * de auth). Hasta entonces `identity` es un parametro obligatorio que quien
- * construya el server hoy pasa hardcodeado — ver el comentario en `types.ts`
- * sobre `CoachIdentity`.
+ * sin identidad por request), este server corre en Vercel y `http.ts` (T15)
+ * resuelve la identidad real del coach por request (Bearer token →
+ * `resolveBearerToken`) antes de llamar a esta factory — ver el comentario en
+ * `types.ts` sobre `CoachIdentity`.
  */
 import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";

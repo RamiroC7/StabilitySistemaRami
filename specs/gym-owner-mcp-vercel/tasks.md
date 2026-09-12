@@ -435,7 +435,7 @@ Milestones de check-in con el usuario:
   no matchea → `invalid_grant` en los cuatro casos. `npx tsc --noEmit` y
   `npx vitest run packages/gym-owner-mcp` (8 archivos, 44 tests) sin errores.
 
-- [ ] **T15 — Middleware de auth para tool calls**
+- [x] **T15 — Middleware de auth para tool calls**
   Satisfies: US-2, US-3
   Depends on: T14, T8
   Notes: envuelve el dispatch de tools (mismo patrón que `guardToolDispatch`
@@ -444,6 +444,47 @@ Milestones de check-in con el usuario:
   tool call; rechazo opaco sin ejecutar la tool si falla. Test: token
   inexistente/expirado/revocado → rechazado; token válido → pasa
   `coach_profile_id` a `audit.ts`.
+  Resultado: creado `packages/gym-owner-mcp/src/oauth/resolve-bearer.ts` con
+  `resolveBearerToken(token)` — `sha256(token)` hex → `SELECT coach_profile_id,
+  coach_label FROM gym_mcp.access_tokens WHERE token_hash = $1 AND
+  revoked_at IS NULL AND expires_at > now()` vía `queryService`; `null` si no
+  hay fila (cubre inexistente/revocado/expirado sin distinguirlos, igual que
+  el filtro vive en el propio SQL), identity si la hay. Reescrito
+  `packages/gym-owner-mcp/src/http.ts`: sacado `DEV_IDENTITY`; `/mcp` ahora
+  extrae `Authorization: Bearer <token>`, llama `resolveBearerToken`, y si es
+  `null` responde `401 { "error": "No autorizado." }` SIN construir el
+  server ni pasarle nada al handler de MCP (mismo patrón `ctx.authInfo.extra`
+  que ya usa `packages/mcp-server/src/http.ts` para pasar la identidad ya
+  resuelta a `createServer`, sin volver a pegarle a la base por cada tool
+  call dentro del mismo request). Cableadas las 6 rutas de T10-T14 en el
+  mismo `handleRequest` (ANTES del chequeo de Bearer, que solo aplica a
+  `/mcp`): `GET /.well-known/oauth-authorization-server`,
+  `GET /.well-known/oauth-protected-resource`, `POST /register`,
+  `GET /authorize` (valida `client_id`/`redirect_uri` contra `findClient`
+  ANTES de renderizar — 400 sin mostrar el form si no matchean, tal como
+  pedía T12), `POST /authorize/callback` (traduce `{ redirectTo }` de
+  `authorizeCallback` a `{ redirect_to }` JSON, o `{ error }` con el
+  `status` que ya trae el resultado), `POST /token` (soporta
+  `application/x-www-form-urlencoded` y JSON en el body, dispatch por
+  `grant_type` a `exchangeAuthorizationCode`/`refreshAccessToken`, 400 si el
+  resultado trae `error`). `issuerFromRequest` calcula protocolo+host de la
+  request real (con `x-forwarded-proto`/`x-forwarded-host` como fuente de
+  verdad detrás del proxy de Vercel, y el `localhost:<GYM_OWNER_MCP_HTTP_PORT>`
+  que ya arma `toWebRequest` como fallback local) — sin hardcodear ningún
+  host, tal como pedía T11. Reusa `toWebRequest`/`sendWebResponse` de T8 para
+  todas las rutas nuevas, sin duplicar esa conversión. Actualizado el
+  comentario de `CoachIdentity` en `types.ts` (ya no es un placeholder: la
+  resuelve `resolveBearerToken` por request) y el docblock de
+  `create-server.ts` en consecuencia. Test `resolve-bearer.test.ts`
+  (`vi.mock("../db.js", ...)`): token válido → identity correcta (con el
+  hash correcto verificado en la llamada a `queryService`); inexistente,
+  revocado y expirado → `null` en tres tests separados (cada uno simula que
+  el `WHERE` de la query ya excluyó la fila, devolviendo `[]`); token vacío
+  → `null` sin llegar a consultar la base. `npx tsc --noEmit` y
+  `npx vitest run packages/gym-owner-mcp` (9 archivos, 49 tests) sin
+  errores. No se levantó el server localmente para este task (el `.env` real
+  no se toca en la Fase C, por instrucción explícita) — la verificación
+  end-to-end en memoria queda para T16.
 
 - [ ] **T16 — Verificación M2: flujo OAuth completo de punta a punta**
   Depends on: T15
