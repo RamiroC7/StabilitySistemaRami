@@ -6,7 +6,8 @@
   "description": "Server MCP remoto (Vercel, mcp-handler) de solo lectura para coaches de un gimnasio. Distinto de @stability/mcp-server (stdio, uso interno).",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "tsc"
+    "build": "tsc",
+    "dev:http": "tsx src/http.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.0.0",

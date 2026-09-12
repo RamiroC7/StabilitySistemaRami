@@ -233,11 +233,30 @@ Milestones de check-in con el usuario:
   tests) sin errores. `npm run lint` desde la raíz: 0 errores (mismo warning
   preexistente de `RegisterPage.tsx`, nada nuevo).
 
-- [ ] **T8 — Endpoint HTTP con `mcp-handler` (Streamable HTTP stateless)**
+- [x] **T8 — Endpoint HTTP con `mcp-handler` (Streamable HTTP stateless)**
   Satisfies: US-1, US-6
   Depends on: T5
   Notes: sin auth todavía (T15 la agrega). Verificar localmente con
   `npx @modelcontextprotocol/inspector@2` contra `http://localhost:<puerto>`.
+  Resultado: creado `packages/gym-owner-mcp/src/http.ts`, mismo patrón de
+  conversión Node↔web-standard que el sibling `packages/mcp-server/src/http.ts`
+  (`toWebRequest`/`sendWebResponse` con `stream.Readable.toWeb`/`fromWeb`, sin
+  dependencia nueva) pero sin ninguna lógica de auth (T15 la agrega) — la
+  factory de `createMcpHandler` siempre construye el server con la constante
+  `DEV_IDENTITY` (`profileId` placeholder
+  `00000000-0000-0000-0000-000000000000`, documentada en `types.ts` desde T5).
+  `hostHeaderValidationResponse`/`originValidationResponse` con
+  `localhostAllowedHostnames()`/`localhostAllowedOrigins()` igual que el
+  sibling. Endpoint en `/mcp`, 404 para cualquier otro path. Puerto vía
+  `GYM_OWNER_MCP_HTTP_PORT`, default `8788`. Shutdown limpio en SIGINT/SIGTERM
+  (`mcpHandler.close()` + `closePools()`, plural, de `db.ts`). Agregado script
+  `"dev:http": "tsx src/http.ts"` a `package.json`. `npx tsc --noEmit` sin
+  errores. Verificado localmente: `npx tsx src/http.ts` (con el `.env` real)
+  levantó y logueó `servidor MCP HTTP escuchando en http://localhost:8788/mcp`;
+  un POST `initialize` real por `curl` devolvió `HTTP 200` con
+  `serverInfo.name = "gym-owner-mcp"` y las `instructions` de negocio (no
+  connection refused). Proceso matado después (`taskkill` sobre el PID que
+  escuchaba el puerto 8788, confirmado libre después).
 
 - [ ] **T9 — Verificación M1: `query_gym_data` end-to-end contra producción**
   Depends on: T7, T8
