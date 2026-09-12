@@ -285,11 +285,26 @@ Milestones de check-in con el usuario:
 
 ## Fase C — Authorization Server OAuth
 
-- [ ] **T10 — `gym_mcp.oauth_clients` + `POST /register` (DCR)**
+- [x] **T10 — `gym_mcp.oauth_clients` + `POST /register` (DCR)**
   Satisfies: US-2, US-7
   Depends on: T0, T2
   Notes: cliente público (sin secreto), valida que `redirect_uris` sea
   `https://` (o `http://localhost` para debugging local).
+  Resultado: creado `packages/gym-owner-mcp/src/oauth/clients.ts` con
+  `registerClient` (valida CADA `redirect_uri` contra `https://` o
+  `http://localhost` con cualquier puerto vía `new URL(...)`, tira
+  `InvalidRedirectUriError` tipado ANTES de tocar la base si alguna es
+  inválida — sin insert parcial; `client_id` random de
+  `crypto.randomBytes(16).toString('hex')`; insert vía `queryService`) y
+  `findClient` (select por `client_id` vía `queryService`, `null` si no
+  existe). Cliente público: la respuesta de `registerClient` siempre trae
+  `token_endpoint_auth_method: "none"`. Test `clients.test.ts`
+  (`vi.mock("../db.js", ...)`): rechazo de una sola `redirect_uri` inválida,
+  rechazo si CUALQUIERA de varias lo es (con assert de que `queryService`
+  nunca se llama), rechazo de lista vacía, caso feliz con `https://` +
+  `http://localhost:<puerto>` mezclados, `client_name` opcional (null si no
+  se manda), y `findClient` feliz/`null`. `npx tsc --noEmit` y
+  `npx vitest run packages/gym-owner-mcp` (3 archivos, 14 tests) sin errores.
 
 - [ ] **T11 — Endpoints de metadata OAuth**
   Satisfies: US-2, US-7
