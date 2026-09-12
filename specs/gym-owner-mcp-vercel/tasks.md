@@ -586,21 +586,41 @@ Milestones de check-in con el usuario:
   cuelga); `POST /mcp` sin `Authorization` → 401 `{"error":"No autorizado."}`
   sin tocar la base. Filas de prueba en `gym_mcp.oauth_clients` limpiadas.
 
-- [ ] **T19 — Conectar a Máximo como primer coach real desde Claude**
+- [x] **T19 — Conectar a Máximo como primer coach real desde Claude**
   Satisfies: US-1..US-9 end-to-end
   Depends on: T18
   Notes: agregar el conector remoto en Claude Desktop o claude.ai pegando la
   URL, completar el login OAuth, y validar en lenguaje natural cada
   acceptance criterion relevante de US-1 a US-9 ("the last mile" — el
   equivalente a T15 del spec hermano).
+  Resultado (2026-09-12): primer intento falló con "no se encontró ningún
+  servidor MCP" — Claude mandaba el tráfico del protocolo a `/` en vez de
+  `/mcp` porque el conector se agregó con la URL pelada. Diagnosticado con
+  los logs reales de Vercel (`vercel logs`) + las filas de
+  `gym_mcp.access_grants`/`access_tokens` (el OAuth SÍ había completado, con
+  `access_token` real emitido a "Maximo Perez"). Fix: el server ahora acepta
+  `/` como alias de `/mcp` (commit aparte). Segundo intento: conector andando
+  end-to-end — Máximo pidió el listado de alumnos en lenguaje natural y
+  `query_gym_data` devolvió los 36 alumnos activos reales (nombre, contacto,
+  objetivo) desde la sesión de Claude real, con la pregunta parafraseada
+  auditada en `gym_mcp.query_audit_log`.
 
-- [ ] **T20 — Checklist de seguridad**
+- [x] **T20 — Checklist de seguridad**
   Satisfies: US-3
   Depends on: T19
   Notes: desde Claude real, intentar un `DELETE`/`UPDATE`/`INSERT`/`CREATE
   TABLE` vía `query_gym_data` → confirmar que los 4 fallan a nivel de base;
   confirmar que ninguna respuesta ni mensaje de error expone una connection
   string o password.
+  Resultado (2026-09-12): corrido desde la sesión de Claude real conectada
+  (no un subagente — un subagente no tiene el conector cargado). Los 4
+  (`DELETE` en `profiles`, `UPDATE` en `profiles`, `INSERT` en
+  `training_plans`, `CREATE TABLE`) fallaron con `cannot execute ... in a
+  read-only transaction`, sin ninguna connection string ni password en el
+  mensaje. Confirmado además que los 4 intentos quedaron auditados en
+  `gym_mcp.query_audit_log` con `row_count = null` y el error real guardado
+  — la auditoría funciona también para queries que fallan, no solo las
+  exitosas.
 
 - [ ] **T21 — Onboardear a los otros 2 coaches**
   Satisfies: US-2
@@ -608,6 +628,26 @@ Milestones de check-in con el usuario:
   Notes: cada uno hace su propio DCR + login (no comparten token); confirmar
   en `gym_mcp.query_audit_log` que las preguntas de cada coach quedan
   atribuidas a su propio `coach_profile_id`.
+  Bloqueado en acción del usuario: esto requiere que cada uno de los otros 2
+  coaches, con su propia cuenta de Supabase Auth, agregue el conector y
+  complete su propio login — no es algo que Claude (ni un subagente) pueda
+  hacer en su nombre. Instrucciones para pasarles: agregar
+  `https://gym-owner-mcp.vercel.app/mcp` como conector remoto en Claude
+  Desktop o claude.ai, y loguearse con la cuenta que ya usan para entrar a la
+  app de Stability. Si su `profiles.role` no es `'coach'` (o está
+  archivado), `/authorize/callback` va a rechazarlos con `access_denied` sin
+  emitir ningún token — verificarlo contra `public.profiles` si alguno
+  reporta error.
+  Progreso (2026-09-12): Máximo confirmó los 3 coaches reales
+  (`maximo@gmail.com` — ya conectado en T19 —, `agustinramissola@gmail.com`,
+  `borredajuan38@gmail.com`) y pidió borrar 4 cuentas de coach que eran de
+  prueba (`maximofini1@gmail.com`, `maximofini3@gmail.com`,
+  `maximofini4@gmail.com`, `aldasorolauti@gmail.com`) — borradas de
+  `auth.users` (cascada a `profiles`), confirmado que no quedó rastro en
+  ninguna de las dos tablas. Verificado que los 3 coaches reales tienen
+  `role = 'coach'` y `is_archived = false`. Falta: que
+  `agustinramissola@gmail.com` y `borredajuan38@gmail.com` hagan su propio
+  login (fuera del alcance de esta sesión).
 
   **→ Milestone M3: check-in con el usuario.**
 
