@@ -397,13 +397,43 @@ Milestones de check-in con el usuario:
   --noEmit` y `npx vitest run packages/gym-owner-mcp` (7 archivos, 33 tests)
   sin errores.
 
-- [ ] **T14 — `POST /token`: intercambio de código y refresh**
+- [x] **T14 — `POST /token`: intercambio de código y refresh**
   Satisfies: US-2
   Depends on: T13
   Notes: `authorization_code` (valida PKCE verifier, código no usado ni
   expirado) y `refresh_token`. Emite `access_token` (TTL ~1h) +
   `refresh_token` (TTL ~30 días), ambos hasheados en `gym_mcp.access_tokens` /
   `gym_mcp.refresh_tokens`.
+  Resultado: creado `packages/gym-owner-mcp/src/oauth/token.ts` con
+  `exchangeAuthorizationCode` (busca el grant por `sha256(code)` en
+  `gym_mcp.access_grants` vía `queryService`; `invalid_grant` si no existe,
+  `used_at` no es null, expiró, o `client_id`/`redirect_uri` no matchean;
+  valida PKCE con `base64url(sha256(codeVerifier)) === code_challenge`
+  usando `digest('base64url')` directo de Node, sin reemplazo manual de
+  caracteres; marca `used_at = now()` ANTES de emitir tokens para que un
+  reintento con el mismo `code` caiga en el chequeo de arriba; resuelve
+  `coach_label` con un `SELECT first_name, last_name FROM public.profiles`
+  vía `queryReadonly` — sin tocar `access_grants`, que no tiene esa columna;
+  emite `access_token`/`refresh_token` de 32 bytes hex cada uno, hasheados
+  sha256 en `gym_mcp.access_tokens`/`gym_mcp.refresh_tokens` con TTL de 1h/30
+  días) y `refreshAccessToken` (busca por hash en `refresh_tokens`,
+  `invalid_grant` si no existe/revocado/expirado/`client_id` no matchea;
+  **decisión chica documentada en comentario**: no rotamos el `refresh_token`
+  en esta iteración — se devuelve el mismo que mandó el cliente, solo se
+  emite un `access_token` nuevo; `coach_label` se re-resuelve en cada
+  refresh en vez de guardarse en `refresh_tokens`, para no dejarlo desactualizado
+  si el coach cambia de nombre). Test `token.test.ts` (`vi.mock("../db.js")`,
+  `code_challenge` real calculado con `createHash('sha256').digest('base64url')`
+  sobre un `code_verifier` fijo para que el PKCE matchee de verdad en el caso
+  feliz): code válido con PKCE correcto → tokens emitidos con el formato hex
+  esperado y el `UPDATE ... set used_at = now()` verificado con el hash
+  correcto; code ya usado → `invalid_grant` sin llegar a marcar nada de
+  nuevo; `code_verifier` que no matchea → `invalid_grant`; code expirado →
+  `invalid_grant`; code inexistente → `invalid_grant`; `client_id` no
+  matchea → `invalid_grant`; refresh válido → nuevo `access_token` con el
+  mismo `refresh_token`; refresh revocado/expirado/inexistente/`client_id`
+  no matchea → `invalid_grant` en los cuatro casos. `npx tsc --noEmit` y
+  `npx vitest run packages/gym-owner-mcp` (8 archivos, 44 tests) sin errores.
 
 - [ ] **T15 — Middleware de auth para tool calls**
   Satisfies: US-2, US-3
