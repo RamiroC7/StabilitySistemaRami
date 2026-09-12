@@ -321,12 +321,32 @@ Milestones de check-in con el usuario:
   ejemplo. `npx tsc --noEmit` y `npx vitest run packages/gym-owner-mcp` (4
   archivos, 16 tests) sin errores.
 
-- [ ] **T12 — `GET /authorize`: página de login con Supabase Auth**
+- [x] **T12 — `GET /authorize`: página de login con Supabase Auth**
   Satisfies: US-2, US-7
   Depends on: T10, T11
   Notes: HTML mínimo + `@supabase/supabase-js` client-side con la anon key del
   proyecto real; valida `client_id`/`redirect_uri` contra `oauth_clients`
   antes de mostrar el form.
+  Resultado: creado `packages/gym-owner-mcp/src/oauth/authorize-page.ts` con
+  `renderAuthorizePage(params)` — HTML standalone (sin build step) que carga
+  `@supabase/supabase-js@2` desde jsdelivr ANTES del script inline, un form
+  mínimo (email + password), y JS inline que hace
+  `signInWithPassword` y, si falla, muestra el error en la página en texto
+  plano (sin redirigir); si funciona, hace `POST /authorize/callback` con
+  `{ supabase_access_token, client_id, redirect_uri, code_challenge, state }`
+  y sigue `redirect_to` de la respuesta JSON con `window.location.href`.
+  `client_id`/`state`/etc se interpolan con dos escapes distintos según el
+  contexto: `escapeHtml` para los atributos `data-*` del form, `escapeJsString`
+  para los literales dentro del `<script>` inline (evita que un `state`
+  hostil rompa el string JS o inyecte un `</script>` de cierre). La
+  validación de `client_id`/`redirect_uri` contra `oauth_clients` (400 antes
+  de renderizar) queda cableada en `http.ts` recién en T15, junto con el resto
+  de las rutas — decisión explícita permitida por la nota de la task. Test
+  `authorize-page.test.ts` (contenido, no integración): orden CDN-antes-que-
+  inline, valores interpolados presentes, POST a `/authorize/callback` +
+  `window.location.href`, y que un `state` con `"><script>` no aparece sin
+  escapar en el HTML resultante. `npx tsc --noEmit` y
+  `npx vitest run packages/gym-owner-mcp` (5 archivos, 21 tests) sin errores.
 
 - [ ] **T13 — `POST /authorize/callback`: verificar identidad y emitir código**
   Satisfies: US-2
