@@ -53,11 +53,44 @@ import { resolveBearerToken } from "./oauth/resolve-bearer.js";
 /** Sólo se usa como fallback de `toWebRequest` cuando no viene `Host` (no debería pasar en Vercel real). */
 export const PORT = Number(process.env.GYM_OWNER_MCP_HTTP_PORT ?? 8788);
 
-const allowedHostnames = [...localhostAllowedHostnames()];
-const allowedOrigins = [...localhostAllowedOrigins()];
+/**
+ * Hostnames extra (además de localhost) permitidos para la validación
+ * anti DNS-rebinding — bare hostnames, sin protocolo (ej.
+ * "gym-owner-mcp.vercel.app"), separados por coma. En Vercel real hace falta
+ * sumar acá el dominio de producción (y cualquier alias), o
+ * `hostHeaderValidationResponse`/`originValidationResponse` rechazan todo
+ * con 403 "Invalid Host"/"Invalid Origin" (pasó en el primer deploy real).
+ */
+const extraAllowedHosts = (process.env.GYM_OWNER_MCP_ALLOWED_HOSTS ?? "")
+  .split(",")
+  .map((h) => h.trim())
+  .filter((h) => h.length > 0);
+
+const allowedHostnames = [...localhostAllowedHostnames(), ...extraAllowedHosts];
+const allowedOrigins = [...localhostAllowedOrigins(), ...extraAllowedHosts];
 
 /** Convierte un `IncomingMessage` de Node a un `Request` web-standard. */
-function toWebRequest(req: http.IncomingMessage): Request {
+/**
+ * Junta el body entero de un `IncomingMessage` en un `Buffer`. Los payloads
+ * de este server (JSON/form-urlencoded de OAuth, tool calls de MCP) son
+ * chicos, así que bufferear entero es aceptable — y evita bufflear un bug
+ * real encontrado en el primer deploy a Vercel: pasar `Readable.toWeb(req)`
+ * directo como `body` de un `Request` web-standard se queda colgado para
+ * siempre al llamar `.json()`/`.text()` sobre esa request en el runtime Node
+ * de Vercel (el stream nunca emite el fin correctamente ahí, a diferencia de
+ * un `node:http` local). Bufferear a mano con `req.on('data'|'end')` es la
+ * forma clásica y confiable de leer el body en un Vercel Node Function.
+ */
+function bufferRequestBody(req: http.IncomingMessage): Promise<Buffer> {
+  return new Promise((resolvePromise, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", () => resolvePromise(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+async function toWebRequest(req: http.IncomingMessage): Promise<Request> {
   const host = req.headers.host ?? `localhost:${PORT}`;
   const url = new URL(req.url ?? "/", `http://${host}`);
 
@@ -72,13 +105,13 @@ function toWebRequest(req: http.IncomingMessage): Request {
   }
 
   const hasBody = req.method !== "GET" && req.method !== "HEAD";
+  const body = hasBody ? await bufferRequestBody(req) : undefined;
+
   return new Request(url, {
     method: req.method,
     headers,
-    // `duplex: "half"` es requerido por fetch() cuando el body es un stream.
-    body: hasBody ? (Readable.toWeb(req) as unknown as ReadableStream) : undefined,
-    duplex: hasBody ? "half" : undefined,
-  } as RequestInit);
+    body,
+  });
 }
 
 /** Escribe un `Response` web-standard en un `ServerResponse` de Node. */
@@ -344,7 +377,7 @@ async function handleMcpRoute(request: Request, res: http.ServerResponse): Promi
  * compatible con Vercel Node.js Serverless Functions sin adaptar nada.
  */
 export async function handleRequest(req: http.IncomingMessage, res: http.ServerResponse): Promise<void> {
-  const request = toWebRequest(req);
+  const request = await toWebRequest(req);
 
   const hostRejection = hostHeaderValidationResponse(request, allowedHostnames);
   if (hostRejection) return sendWebResponse(hostRejection, res);

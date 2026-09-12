@@ -525,17 +525,66 @@ Milestones de check-in con el usuario:
 
 ## Fase D — Deploy y validación con clientes reales
 
-- [ ] **T17 — Alta del proyecto de Vercel**
+- [x] **T17 — Alta del proyecto de Vercel**
   Satisfies: US-6, US-8
   Depends on: T9, T16
   Notes: proyecto nuevo, root directory `packages/gym-owner-mcp`, región
   `us-east-1`. Env vars: connection strings de ambos roles,
   `SUPABASE_URL`, `SUPABASE_ANON_KEY`. Ningún secreto en el repo.
+  Resultado (2026-09-12): decisión tomada con el usuario de mantenerlo
+  **standalone** (deployado directo desde `packages/gym-owner-mcp/` con
+  `vercel deploy`, sin el mecanismo de "Root Directory" de un monorepo
+  vinculado a Git) — evita tocar el `vercel.json`/build de la app principal.
+  Proyecto `maximofinicba-9437s-projects/gym-owner-mcp`, alias de producción
+  `https://gym-owner-mcp.vercel.app`, región `iad1` (= us-east-1, misma que
+  el proyecto Supabase). Env vars seteadas vía `vercel env add ... production`
+  por stdin (nunca como argumento de CLI, para no dejarlas en el historial de
+  shell): `GYM_OWNER_RO_DATABASE_URL`, `GYM_MCP_SERVICE_DATABASE_URL`,
+  `SUPABASE_URL`, `SUPABASE_ANON_KEY`, y `GYM_OWNER_MCP_ALLOWED_HOSTS`
+  (nueva — ver T18) — ninguna en el repo. Como el `tsconfig.json` del paquete
+  extendía `../../tsconfig.base.json` (fuera del directorio deployado), se
+  reescribió autocontenido (compilerOptions copiadas a mano, con nota de por
+  qué). Se agregó `packages/gym-owner-mcp/vercel.json` (rewrite de todas las
+  rutas a `/api/handler`) y `packages/gym-owner-mcp/api/handler.ts` (entrypoint
+  Node Function de Vercel, reusa `handleRequest` de `src/request-handler.ts`
+  — separado de `src/http.ts`, que ahora solo hace de bootstrap `node:http`
+  local). `public/.gitkeep` + `"outputDirectory": "public"` en `vercel.json`
+  porque Vercel exige un output directory aunque todo el tráfico real vaya
+  por el rewrite a la función.
 
-- [ ] **T18 — Deploy a producción y smoke test del endpoint**
+- [x] **T18 — Deploy a producción y smoke test del endpoint**
   Depends on: T17
   Notes: confirmar que los endpoints de metadata OAuth y el endpoint MCP
   responden por HTTPS en la URL real de Vercel.
+  Resultado (2026-09-12): dos bugs reales encontrados y corregidos recién en
+  el deploy real (ninguno se manifestaba en local con `tsx src/http.ts` ni en
+  los tests con mocks):
+  1. **Host/Origin rechazados con 403** (`hostHeaderValidationResponse`/
+     `originValidationResponse` solo tenían `localhost` en el allowlist).
+     Fix: env var nueva `GYM_OWNER_MCP_ALLOWED_HOSTS` (hostnames pelados,
+     coma-separados) sumada al allowlist; seteada a `gym-owner-mcp.vercel.app`
+     en producción.
+  2. **`POST /register` (y cualquier POST con body real) se colgaba
+     indefinidamente**, sin error ni timeout visible. Causa real: pasar
+     `Readable.toWeb(req)` como `body` de un `Request` web-standard y después
+     llamar `.json()`/`.text()` sobre esa request nunca resuelve en el
+     runtime Node de Vercel (sí funciona en `node:http` local — por eso no se
+     detectó antes). Fix: `toWebRequest` ahora buferea el body entero a mano
+     (`req.on('data'|'end')`) en vez de pasarlo como stream — confiable en
+     los dos entornos, y los payloads de este server son chicos. De paso se
+     agregó un timeout manual de 8s en `db.ts` (`queryReadonly`/`queryService`)
+     como red de seguridad para que una conexión colgada devuelva un error
+     explícito en vez de trabar la función indefinidamente, y
+     `dns.setDefaultResultOrder('ipv4first')` (fix conocido de Node+Supabase
+     en serverless, buena práctica aunque no haya sido la causa raíz acá).
+  Smoke test final, todo contra `https://gym-owner-mcp.vercel.app` real:
+  `GET /.well-known/oauth-authorization-server` → 200 con el issuer real;
+  `GET /.well-known/oauth-protected-resource` → 200; `POST /register` → 201
+  con un `client_id` real (fila insertada y después borrada, era de prueba);
+  `GET /authorize` con ese client → 200, HTML con el script de supabase-js;
+  `POST /token` con un code inexistente → 400 `invalid_grant` (rápido, no
+  cuelga); `POST /mcp` sin `Authorization` → 401 `{"error":"No autorizado."}`
+  sin tocar la base. Filas de prueba en `gym_mcp.oauth_clients` limpiadas.
 
 - [ ] **T19 — Conectar a Máximo como primer coach real desde Claude**
   Satisfies: US-1..US-9 end-to-end

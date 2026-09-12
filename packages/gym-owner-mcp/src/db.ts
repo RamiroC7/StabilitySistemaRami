@@ -14,7 +14,15 @@
  *
  * Ver specs/gym-owner-mcp-vercel/design.md (Data model, Architecture).
  */
+import dns from "node:dns";
 import pg from "pg";
+
+// Fix conocido para "conexión colgada" a Supabase desde runtimes serverless
+// (Vercel): el resolver de Node intenta AAAA (IPv6) primero y puede tardar
+// mucho en caer a A (IPv4) si el IPv6 no es alcanzable desde la función.
+// Forzar IPv4 primero evita el cuelgue. Ver: primer deploy real a Vercel,
+// `POST /register` colgado indefinidamente hasta este fix.
+dns.setDefaultResultOrder("ipv4first");
 
 const { Pool } = pg;
 
@@ -101,6 +109,32 @@ poolService.on("error", (err: Error) => {
 });
 
 /**
+ * Diagnóstico del deploy real a Vercel: una query colgada (conexión que
+ * nunca completa ni falla) deja la función esperando para siempre y el
+ * cliente ve un timeout sin ningún detalle. Este timeout manual convierte
+ * eso en un error explícito y sanitizable en vez de un cuelgue silencioso.
+ */
+const QUERY_TIMEOUT_MS = 8_000;
+
+function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+  return new Promise<T>((resolvePromise, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timeout de ${QUERY_TIMEOUT_MS}ms esperando la conexión/query (${label})`));
+    }, QUERY_TIMEOUT_MS);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolvePromise(value);
+      },
+      (err: unknown) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+/**
  * Corre una query parametrizada contra el rol `gym_owner_readonly` (solo
  * SELECT sobre `public`) y devuelve solo las filas.
  * En caso de error re-lanza un Error con el mensaje sanitizado (sin password
@@ -108,7 +142,10 @@ poolService.on("error", (err: Error) => {
  */
 export async function queryReadonly<T>(text: string, params?: unknown[]): Promise<T[]> {
   try {
-    const result = await poolReadonly.query(text, params as unknown[] | undefined);
+    const result = await withTimeout(
+      poolReadonly.query(text, params as unknown[] | undefined),
+      "gym_owner_readonly",
+    );
     return result.rows as T[];
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);
@@ -125,7 +162,10 @@ export async function queryReadonly<T>(text: string, params?: unknown[]): Promis
  */
 export async function queryService<T>(text: string, params?: unknown[]): Promise<T[]> {
   try {
-    const result = await poolService.query(text, params as unknown[] | undefined);
+    const result = await withTimeout(
+      poolService.query(text, params as unknown[] | undefined),
+      "gym_mcp_service",
+    );
     return result.rows as T[];
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);
