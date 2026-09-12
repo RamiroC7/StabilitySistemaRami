@@ -58,37 +58,42 @@ Milestones de check-in con el usuario:
   `20260902000000_mcp_server_setup.sql`), con el SQL completo de
   design.md §Data model. Los passwords de ambos roles se generan aparte y NO
   se commitean (igual que con `mcp_readonly`).
-  Resultado: creado `supabase/migrations/20260912000000_gym_owner_mcp_setup.sql`
-  con: (1) docblock inicial (qué hace, aditivo, no toca `mcp_readonly` /
-  `packages/mcp-server` / la app / RLS existente, nota de passwords aparte);
-  (2) `CREATE ROLE gym_owner_readonly` (LOGIN, sin password, NOSUPERUSER/
-  NOCREATEDB/NOCREATEROLE/NOINHERIT/NOREPLICATION, BYPASSRLS, CONNECTION LIMIT
-  10) + los 3 `ALTER ROLE ... SET`; (3) grants de solo lectura sobre `public`
-  (`GRANT USAGE`, `GRANT SELECT ON ALL TABLES`, `ALTER DEFAULT PRIVILEGES`);
-  (4) `CREATE SCHEMA IF NOT EXISTS gym_mcp`; (5) `CREATE ROLE gym_mcp_service`
-  (LOGIN, sin password, NOSUPERUSER/NOCREATEDB/NOCREATEROLE/NOINHERIT/
-  NOREPLICATION/NOBYPASSRLS, CONNECTION LIMIT 10) + `ALTER ROLE ... SET
-  statement_timeout`; (6) `GRANT USAGE, CREATE ON SCHEMA gym_mcp`; (7) las 5
-  tablas de `gym_mcp` (`oauth_clients`, `access_grants`, `access_tokens`,
-  `refresh_tokens`, `query_audit_log`) con columnas exactas de design.md, cada
-  una con `ALTER TABLE ... OWNER TO gym_mcp_service` (enfoque elegido en vez de
-  `GRANT ALL` explícito por tabla, documentado en un comentario); (8)
-  comentario final explícito de aislamiento entre roles. Revisión estática
-  contra design.md §Data model: confirmado que `gym_owner_readonly` solo tiene
-  `USAGE` + `SELECT` sobre `public` (sin INSERT/UPDATE/DELETE/DDL, sin acceso a
-  `gym_mcp`) y que `gym_mcp_service` no tiene ningún grant sobre `public` (solo
-  `USAGE, CREATE` sobre `gym_mcp` + ownership de sus 5 tablas). No se aplicó a
-  ninguna base (eso es T2, pendiente de aprobación explícita).
+  Resultado: creado `supabase/migrations/20260912000000_gym_owner_mcp_setup.sql`.
+  Versión inicial con `CREATE ROLE gym_owner_readonly` + `ALTER TABLE ... OWNER
+  TO gym_mcp_service` — **reescrita durante T2** (ver esa nota) porque
+  `gym_owner_readonly` ya existía en producción out-of-band y porque `OWNER TO`
+  falla si quien migra no es superuser ni miembro del rol nuevo. La versión
+  final commiteada usa `ALTER ROLE` para `gym_owner_readonly` y `GRANT`
+  explícito (no `OWNER TO`) para las tablas de `gym_mcp` — documentado en el
+  docblock del propio archivo.
 
-- [ ] **T2 — Aplicar la migración a producción**
+- [x] **T2 — Aplicar la migración a producción**
   Satisfies: US-3, US-4
   Depends on: T1
   Notes: **requiere aprobación explícita del usuario con el SQL a la vista**
   antes de ejecutar — es DDL sobre `hcvytsitbsandaphsxyn`. Vía
   `apply_migration` (transaccional) o dashboard. El archivo de migración va al
   repo; los passwords no.
+  Resultado (2026-09-12): usuario aprobó el SQL a la vista. Al aplicar,
+  `apply_migration` rechazó `CREATE ROLE gym_owner_readonly` (`already
+  exists`) — el rol ya estaba en producción, creado fuera de esta sesión, con
+  `CONNECTION LIMIT 5` / `idle_in_transaction_session_timeout 60s` /
+  `search_path public, extensions` (valores de un borrador anterior a
+  `design.md`) y password ya seteado, pero **sin ningún `GRANT SELECT`**.
+  Confirmado con el usuario (no asumido): se ajustó con `ALTER ROLE` a los
+  valores del diseño aprobado y se conservó el password existente en vez de
+  recrear el rol. Un segundo intento falló en `ALTER TABLE ... OWNER TO
+  gym_mcp_service` (`must be able to SET ROLE`, el rol que migra no es
+  superuser ni miembro de `gym_mcp_service`); se resolvió con `GRANT` +
+  `ALTER DEFAULT PRIVILEGES` explícitos en vez de `OWNER TO`. Migración
+  aplicada con éxito en el tercer intento. Passwords seteados aparte (no en
+  el archivo versionado) vía `apply_migration` con un nombre separado
+  (`gym_owner_mcp_set_passwords`) porque `execute_sql` corre en transacción
+  read-only y no puede correr `ALTER ROLE ... PASSWORD`. `supabase/migrations/
+  20260912000000_gym_owner_mcp_setup.sql` reescrito para reflejar el SQL
+  realmente aplicado (no el borrador original).
 
-- [ ] **T3 — Verificar ambos roles conectando directo**
+- [x] **T3 — Verificar ambos roles conectando directo**
   Satisfies: US-3, US-4
   Depends on: T2
   Notes: como rol `gym_owner_readonly` — confirmar que ve filas de varias
@@ -98,6 +103,16 @@ Milestones de check-in con el usuario:
   `gym_mcp`, y que **no** puede leer ninguna tabla de `public` (debe fallar
   con `permission denied for table ...` — tiene `USAGE` de schema por el
   default de Postgres a `PUBLIC`, pero ningún grant de tabla).
+  Resultado: verificado con un script `pg` ad-hoc contra el pooler
+  (`aws-1-us-east-1.pooler.supabase.com:6543`, borrado después de usarlo por
+  llevar los passwords en claro). `gym_owner_readonly`: `profiles` (50),
+  `student_profiles` (36), `training_plans` (194) — todas legibles; `INSERT`/
+  `UPDATE`/`CREATE TABLE` → `cannot execute ... in a read-only transaction`.
+  `gym_mcp_service`: `INSERT`/`SELECT`/`DELETE` en `gym_mcp.oauth_clients` OK
+  (fila de prueba insertada y borrada); `SELECT` en `public.profiles` →
+  `permission denied for table profiles` (confirma la nota corregida de T1,
+  no "for schema"). Los dos roles se comportan exactamente como pide el
+  diseño.
 
 ---
 

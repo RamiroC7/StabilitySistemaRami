@@ -1,39 +1,50 @@
 -- Gym Owner MCP (acceso read-only de coaches vía MCP remoto en Vercel) — Fase A.
 --
--- Aditivo: crea un rol de solo lectura sobre `public` (`gym_owner_readonly`),
--- un schema nuevo (`gym_mcp`) con 5 tablas de contabilidad propia del server
--- (clientes OAuth, grants, tokens, refresh tokens, audit log), y un rol de
--- servicio (`gym_mcp_service`) dueño de ese schema. NO modifica ninguna
--- tabla, policy, función o rol existente. NO toca `mcp_readonly`,
+-- Aditivo: crea un schema nuevo (`gym_mcp`) con 5 tablas de contabilidad
+-- propia del server (clientes OAuth, grants, tokens, refresh tokens, audit
+-- log), un rol de servicio (`gym_mcp_service`) para administrarlas, y ajusta
+-- el rol de solo lectura `gym_owner_readonly` para que quede alineado con
+-- specs/gym-owner-mcp-vercel/design.md. NO modifica ninguna tabla, policy,
+-- función o rol existente fuera de lo listado. NO toca `mcp_readonly`,
 -- `packages/mcp-server`, la app principal, ni RLS de ninguna tabla de
--- `public` (ver design.md §Data model y §Architecture, "No toca").
+-- `public`.
 --
--- Los passwords de ambos roles NO están acá: se setean aparte, una sola vez
--- cada uno, con
---   alter role gym_owner_readonly password '<generado>';
---   alter role gym_mcp_service   password '<generado, distinto>';
--- y viven solo como env vars de Vercel — mismo criterio que se usó para
--- `mcp_readonly` en 20260902000000_mcp_server_setup.sql.
+-- ⚠️ Nota real de esta corrida (2026-09-12, aplicada vía `apply_migration`
+-- contra `hcvytsitbsandaphsxyn`): el rol `gym_owner_readonly` **ya existía**
+-- en producción al momento de aplicar esta migración — creado por fuera de
+-- esta sesión/herramienta, con `CONNECTION LIMIT 5`,
+-- `idle_in_transaction_session_timeout = 60s` y `search_path = public,
+-- extensions` (valores de un borrador anterior a `design.md`, no del diseño
+-- aprobado), con password ya seteado pero **sin ningún `GRANT SELECT`**
+-- (quedó a mitad de camino). Confirmado con el usuario antes de tocarlo: se
+-- ajustó con `ALTER ROLE` a los valores del diseño aprobado (connection
+-- limit 10, idle timeout 15s, sin el `search_path` forzado) y se agregaron
+-- los grants que faltaban, **conservando el password existente** — no se
+-- recreó el rol. Por eso este archivo usa `ALTER ROLE`, no `CREATE ROLE`,
+-- para `gym_owner_readonly`.
 --
--- Esta migración NO se aplica a producción en este paso (T1 de
--- specs/gym-owner-mcp-vercel/tasks.md). Aplicarla es T2, que requiere
--- aprobación explícita del usuario con este SQL a la vista.
+-- También se descartó `ALTER TABLE ... OWNER TO gym_mcp_service` (como
+-- proponía la primera versión de esta migración): el rol que ejecuta
+-- `apply_migration` no es superuser ni miembro de `gym_mcp_service`, así que
+-- Postgres lo rechaza (`must be able to SET ROLE`). Se usa `GRANT` explícito
+-- sobre cada tabla en su lugar, más `ALTER DEFAULT PRIVILEGES` para que
+-- cubra tablas que se sumen después a `gym_mcp`.
+--
+-- El password de `gym_mcp_service` (rol nuevo, sin este problema) se setea
+-- aparte, una sola vez, con
+--   alter role gym_mcp_service password '<generado>';
+-- y vive solo como env var de Vercel — mismo criterio que `mcp_readonly` en
+-- 20260902000000_mcp_server_setup.sql.
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 1. Rol de datos: gym_owner_readonly.
+-- 1. Rol de datos: gym_owner_readonly (ya existía — ver nota arriba).
 --    BYPASSRLS + solo SELECT sobre TODAS las tablas de public (US-3, US-4).
---    Sin password acá (ver cabecera). Sin USAGE sobre "mcp" ni ningún grant
---    sobre packages/mcp-server (US-8).
 -- ─────────────────────────────────────────────────────────────────────────────
-create role gym_owner_readonly with
-    login
-    nosuperuser nocreatedb nocreaterole noinherit noreplication
-    bypassrls
-    connection limit 10;   -- serverless: varias invocaciones concurrentes
-
-alter role gym_owner_readonly set default_transaction_read_only = on;
-alter role gym_owner_readonly set statement_timeout = '30s';
+alter role gym_owner_readonly connection limit 10;
 alter role gym_owner_readonly set idle_in_transaction_session_timeout = '15s';
+alter role gym_owner_readonly reset search_path;
+-- default_transaction_read_only (on), statement_timeout (30s) y bypassrls
+-- (true) ya estaban correctos desde la creación previa — sin cambios.
 
 grant usage on schema public to gym_owner_readonly;
 grant select on all tables in schema public to gym_owner_readonly;
@@ -50,7 +61,7 @@ alter default privileges for role postgres in schema public
 create schema if not exists gym_mcp;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 3. Rol de servicio: gym_mcp_service.
+-- 3. Rol de servicio: gym_mcp_service (nuevo, sin el problema de arriba).
 --    Solo para la contabilidad propia del server — nunca toca public.
 --    Sin password acá (ver cabecera).
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -64,13 +75,7 @@ alter role gym_mcp_service set statement_timeout = '10s';
 grant usage, create on schema gym_mcp to gym_mcp_service;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- 4. Tablas de gym_mcp.
---    Enfoque elegido: ALTER TABLE ... OWNER TO gym_mcp_service en vez de un
---    GRANT ALL explícito por tabla — más simple (el owner tiene automáticamente
---    todos los privilegios, incluidos los que se agreguen a futuro con ALTER
---    TABLE) y no requiere mantener una lista de grants en paralelo a la lista
---    de tablas. Sin RLS: son de uso interno del server, no expuestas a
---    gym_owner_readonly ni a PostgREST (ver comentario final).
+-- 4. Tablas de gym_mcp + grants explícitos a gym_mcp_service.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create table gym_mcp.oauth_clients (
@@ -80,7 +85,6 @@ create table gym_mcp.oauth_clients (
     created_at    timestamptz not null default now()
 );
 -- Clientes públicos (sin secreto): el MCP client de Claude usa PKCE.
-alter table gym_mcp.oauth_clients owner to gym_mcp_service;
 
 create table gym_mcp.access_grants (              -- authorization codes, TTL corto
     code_hash        text primary key,             -- sha256(code) hex
@@ -91,7 +95,6 @@ create table gym_mcp.access_grants (              -- authorization codes, TTL co
     expires_at       timestamptz not null,          -- now() + 5 min
     used_at          timestamptz
 );
-alter table gym_mcp.access_grants owner to gym_mcp_service;
 
 create table gym_mcp.access_tokens (
     token_hash       text primary key,             -- sha256(token) hex
@@ -102,7 +105,6 @@ create table gym_mcp.access_tokens (
     expires_at       timestamptz not null,          -- ej. now() + 1h
     revoked_at       timestamptz
 );
-alter table gym_mcp.access_tokens owner to gym_mcp_service;
 
 create table gym_mcp.refresh_tokens (
     token_hash       text primary key,
@@ -112,7 +114,6 @@ create table gym_mcp.refresh_tokens (
     expires_at       timestamptz not null,          -- ej. now() + 30 días
     revoked_at       timestamptz
 );
-alter table gym_mcp.refresh_tokens owner to gym_mcp_service;
 
 create table gym_mcp.query_audit_log (
     id               uuid primary key default gen_random_uuid(),
@@ -124,7 +125,25 @@ create table gym_mcp.query_audit_log (
     duration_ms      integer,
     error            text
 );
-alter table gym_mcp.query_audit_log owner to gym_mcp_service;
+
+-- gym_mcp_service es quien lee/escribe estas filas en runtime. GRANT
+-- explícito en vez de ALTER TABLE ... OWNER TO: el rol que corre esta
+-- migración no es superuser ni miembro de gym_mcp_service (ver nota de
+-- cabecera), así que reasignar el owner falla con "must be able to SET
+-- ROLE". Postgres es dueño de las tablas; gym_mcp_service solo tiene los
+-- privilegios de fila que necesita.
+grant select, insert, update, delete on
+    gym_mcp.oauth_clients,
+    gym_mcp.access_grants,
+    gym_mcp.access_tokens,
+    gym_mcp.refresh_tokens,
+    gym_mcp.query_audit_log
+  to gym_mcp_service;
+
+-- Cubre también cualquier tabla que se sume después a gym_mcp creada por el
+-- mismo rol (postgres) que corrió esta migración.
+alter default privileges for role postgres in schema gym_mcp
+    grant select, insert, update, delete on tables to gym_mcp_service;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 5. Aislamiento entre roles (léase junto con design.md §Data model):
