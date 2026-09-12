@@ -26,6 +26,28 @@ datos en lenguaje natural desde Claude, con acceso estrictamente de solo lectura
 - Sin construir un MCP server desde cero (se parte de un server/base existente)
 - Reusable: Stability es un boilerplate aplicado a distintos gimnasios
 
+## Relación con `packages/mcp-server` / rol `mcp_readonly`
+
+Ya existe otro MCP server en este repo ([specs/mcp-server/](../specs/mcp-server/requirements.md),
+`packages/mcp-server`, rol Postgres `mcp_readonly`) — 7 tools de solo lectura,
+auth por token personal, transport stdio en uso desde Claude Code/Desktop y un
+transport HTTP escrito pero sin desplegar. Se evaluó reusarlo y **se decidió
+conscientemente construir un sistema aparte** (2026-09-12):
+
+- `mcp_readonly` es una herramienta interna, pensada para un dev con un token
+  personal vía stdio. El acceso de los coaches de Stability al negocio es un
+  producto distinto: varios coaches (hoy Máximo, después los otros 2 de
+  Stability), sin terminal, vía conector remoto en Vercel.
+- Un modelo multi-coach real pide identidad por persona (idealmente OAuth) y
+  reusabilidad entre gimnasios — más cercano al objetivo original de este doc
+  que al alcance de `mcp_readonly` (single-token, `role='coach'` sin
+  particionar).
+- Costo aceptado: dos roles de solo lectura y dos servers MCP conviven contra
+  la misma base de producción. Si en algún momento se quiere unificar, el
+  punto de partida sería desplegar el `http.ts` que ya existe en
+  `packages/mcp-server` en vez de este doc — queda anotado acá para quien lo
+  retome.
+
 ## Alternativas descartadas
 
 | Alternativa | Motivo |
