@@ -1,6 +1,10 @@
 # Tasks: Acceso read-only de coaches vía MCP remoto en Vercel
 
-**Status:** Approved
+**Status:** Done — Fase 1 cerrada el 2026-09-12. T21 sigue abierta y en
+curso de forma asíncrona (onboarding de Agustín y Juan, fuera del control de
+esta sesión); no bloquea el cierre porque el sistema ya está en producción,
+validado end-to-end con un coach real (T19/T20) y listo para que los demás
+se sumen sin ninguna acción de infraestructura adicional.
 **Last updated:** 2026-09-12
 **Design:** [design.md](./design.md)
 
@@ -21,7 +25,9 @@ Milestones de check-in con el usuario:
   funciona de punta a punta contra un cliente de prueba; un token inválido o
   revocado es rechazado.
 - **M3** = después de T20: los 3 coaches conectados de forma independiente
-  desde Claude real, checklist de seguridad corrido.
+  desde Claude real, checklist de seguridad corrido. ⏳ parcial: checklist
+  corrido y Máximo conectado (T19/T20 ✅); Agustín y Juan pendientes de
+  conectarse por su cuenta — no bloquea el cierre de Fase 1 (ver T21/T23).
 
 ---
 
@@ -679,8 +685,16 @@ Milestones de check-in con el usuario:
   password ni connection string real — solo placeholders (`<generado>`,
   `<rol>`, `<NAME>`, `<uuid>`).
 
-- [ ] **T23 — Marcar los specs como Done**
+- [x] **T23 — Marcar los specs como Done**
   Depends on: T21
   Notes: `requirements.md` y `design.md` de esta feature → `Status: Done`;
   actualizar la tabla de estado en `docs/gym-owner-mcp-access.md` (Fase 1 →
   Implementada).
+  Resultado (2026-09-12): Máximo pidió cerrar la Fase 1 ahora, sin esperar a
+  que T21 termine — Agustín y Juan se van a conectar de forma asíncrona y
+  Máximo avisa cuando pase. `requirements.md` y `design.md` → `Status: Done`.
+  `docs/gym-owner-mcp-access.md` actualizado (Fase 1 → Implementada, con nota
+  de que el onboarding de los otros 2 coaches sigue en curso). T21 queda
+  con su checkbox sin marcar a propósito — es el único ítem real pendiente
+  de esta fase y no depende de más trabajo de ingeniería, solo de que las
+  otras 2 personas se logueen.

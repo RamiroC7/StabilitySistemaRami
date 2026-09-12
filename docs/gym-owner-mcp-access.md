@@ -5,7 +5,7 @@ datos en lenguaje natural desde Claude, con acceso estrictamente de solo lectura
 
 | Fase | Alcance | Estado |
 |---|---|---|
-| 1 — MVP remoto | Rol read-only + server MCP remoto en Vercel + OAuth + tool con auditoría | A implementar |
+| 1 — MVP remoto | Rol read-only + server MCP remoto en Vercel + OAuth + tool con auditoría | Implementada (2026-09-12) — ver [specs/gym-owner-mcp-vercel/](../specs/gym-owner-mcp-vercel/tasks.md). En producción: `https://gym-owner-mcp.vercel.app/mcp`. Onboarding de los 3 coaches en curso (Máximo conectado y validado end-to-end; Agustín y Juan pendientes de loguearse). |
 | 2 — Reports parametrizados | SQL fijo para preguntas frecuentes, híbrido con SQL libre | Diseñada, no implementar aún |
 | 3 — Multi-tenancy y proactividad | Multi-gimnasio real, imágenes on-brand, alertas por cron | Diseñada, disparar al 2º-3er gym |
 

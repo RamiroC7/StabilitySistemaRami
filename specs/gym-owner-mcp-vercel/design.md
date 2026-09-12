@@ -1,6 +1,6 @@
 # Design: Acceso read-only de coaches vía MCP remoto en Vercel
 
-**Status:** Approved
+**Status:** Done
 **Last updated:** 2026-09-12
 **Aprobado por:** Máximo — 2026-09-12
 **Requirements:** [requirements.md](./requirements.md)
