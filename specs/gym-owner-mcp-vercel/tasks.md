@@ -306,12 +306,20 @@ Milestones de check-in con el usuario:
   se manda), y `findClient` feliz/`null`. `npx tsc --noEmit` y
   `npx vitest run packages/gym-owner-mcp` (3 archivos, 14 tests) sin errores.
 
-- [ ] **T11 — Endpoints de metadata OAuth**
+- [x] **T11 — Endpoints de metadata OAuth**
   Satisfies: US-2, US-7
   Depends on: T0
   Notes: `GET /.well-known/oauth-authorization-server` y
   `/.well-known/oauth-protected-resource`, `code_challenge_methods_supported:
   ["S256"]`.
+  Resultado: creado `packages/gym-owner-mcp/src/oauth/metadata.ts` con
+  `buildAuthServerMetadata(issuer)` y `buildProtectedResourceMetadata(issuer)`,
+  puro cálculo sin DB ni estado — el `issuer` se recibe como parámetro (lo
+  calcula `http.ts` a partir de la request real recién en T15, cuando se
+  cablean las rutas; este archivo no hardcodea ningún host). Test
+  `metadata.test.ts`: shape exacto de ambos objetos para un issuer de
+  ejemplo. `npx tsc --noEmit` y `npx vitest run packages/gym-owner-mcp` (4
+  archivos, 16 tests) sin errores.
 
 - [ ] **T12 — `GET /authorize`: página de login con Supabase Auth**
   Satisfies: US-2, US-7
