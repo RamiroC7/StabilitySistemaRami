@@ -16,7 +16,7 @@ Ordenadas por dependencia. Se marcan `- [x]` a medida que se completan.
 Milestones de check-in con el usuario:
 - **M1** = después de T9: `query_gym_data` responde una pregunta real contra
   producción desde el Inspector local, con fila de auditoría en
-  `gym_mcp.query_audit_log`. Todavía sin OAuth.
+  `gym_mcp.query_audit_log`. Todavía sin OAuth. ✅ verificado el 2026-09-12.
 - **M2** = después de T15: el flujo OAuth completo (DCR → login → code → token)
   funciona de punta a punta contra un cliente de prueba; un token inválido o
   revocado es rechazado.
@@ -258,12 +258,28 @@ Milestones de check-in con el usuario:
   connection refused). Proceso matado después (`taskkill` sobre el PID que
   escuchaba el puerto 8788, confirmado libre después).
 
-- [ ] **T9 — Verificación M1: `query_gym_data` end-to-end contra producción**
+- [x] **T9 — Verificación M1: `query_gym_data` end-to-end contra producción**
   Depends on: T7, T8
   Notes: pregunta real desde el Inspector (ej. "planes activos"), confirmar
   fila en `gym_mcp.query_audit_log` con el SQL real y `row_count` correcto.
+  Resultado (2026-09-12): server levantado con `npx tsx src/http.ts`
+  (`.env` real) en `http://localhost:8788/mcp`.
+  `npx @modelcontextprotocol/inspector@2 --cli --transport http --server-url
+  http://localhost:8788/mcp --method tools/list` confirmó `query_gym_data`
+  (único tool, con su `inputSchema` real). `tools/call` con
+  `question="cuántos planes de entrenamiento activos hay"` y
+  `sql="select count(*)::int as activos from public.training_plans where
+  is_archived = false"` devolvió `structuredContent = { rows: [{ activos: 142
+  }], row_count: 1, truncated: false }`. Confirmada la fila de auditoría con un
+  script ad-hoc (`tsx`, reusando `queryService`/`closePools` de `db.ts`,
+  borrado después de usarlo): `select question, sql, row_count from
+  gym_mcp.query_audit_log where coach_profile_id =
+  '00000000-0000-0000-0000-000000000000' order by ts desc limit 1` devolvió
+  `question`/`sql` idénticos a los del `tools/call` y `row_count = 1` — coincide
+  exactamente. Servidor detenido después (proceso `tsx src/http.ts` matado,
+  puerto 8788 confirmado libre).
 
-  **→ Milestone M1: check-in con el usuario.**
+  **→ Milestone M1: check-in con el usuario. ✅ verificado el 2026-09-12.**
 
 ---
 
