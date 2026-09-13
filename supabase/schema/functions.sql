@@ -180,7 +180,10 @@ begin
 end;
 $function$;
 
-REVOKE ALL ON FUNCTION public.update_own_assignment_progress(uuid, integer, integer) FROM PUBLIC;
+-- 2026-09-13: REVOKE de solo PUBLIC no alcanzaba (ALTER DEFAULT PRIVILEGES
+-- de este proyecto le da EXECUTE a anon/authenticated por fuera de PUBLIC) —
+-- se revoca explícitamente de cada rol. Ver 20260913000000_tighten_new_function_grants.sql.
+REVOKE EXECUTE ON FUNCTION public.update_own_assignment_progress(uuid, integer, integer) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.update_own_assignment_progress(uuid, integer, integer) TO authenticated;
 
 -- ---------------------------------------------------------------------
@@ -205,6 +208,10 @@ AS $function$
   where status = 'active'
     and end_date < current_date;
 $function$;
+
+-- 2026-09-13: no debe ser invocable via /rest/v1/rpc por nadie — solo la
+-- corre pg_cron (como `postgres`, que no depende de estos grants).
+REVOKE EXECUTE ON FUNCTION public.complete_expired_assignments() FROM PUBLIC, anon, authenticated, mcp_readonly;
 
 -- select cron.schedule(
 --   'complete-expired-assignments-daily',
