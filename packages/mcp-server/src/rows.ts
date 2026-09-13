@@ -18,6 +18,11 @@ export interface ProfileRow {
   last_name: string;
   email: string;
   role: "student" | "coach";
+}
+
+/** public.student_profiles (columnas usadas por los tools) */
+export interface StudentProfileRow {
+  id: string;
   is_archived: boolean;
 }
 

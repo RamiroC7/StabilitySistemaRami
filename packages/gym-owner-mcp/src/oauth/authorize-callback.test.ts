@@ -24,7 +24,7 @@ function makeDeps(overrides: Partial<HandleAuthorizeCallbackDeps> = {}): HandleA
   return {
     verifySupabaseSession: vi.fn().mockResolvedValue({ id: "coach-uuid-1" }),
     findClient: vi.fn().mockResolvedValue(CLIENT),
-    queryReadonly: vi.fn().mockResolvedValue([{ role: "coach", is_archived: false }]),
+    queryReadonly: vi.fn().mockResolvedValue([{ role: "coach" }]),
     insertAccessGrant: vi.fn().mockResolvedValue({ code: "plaintext-code-abc" }),
     ...overrides,
   };
@@ -73,18 +73,7 @@ describe("handleAuthorizeCallback", () => {
 
   it("perfil role='student' -> access_denied, sin insertar grant (US-2)", async () => {
     const deps = makeDeps({
-      queryReadonly: vi.fn().mockResolvedValue([{ role: "student", is_archived: false }]),
-    });
-
-    const result = await handleAuthorizeCallback(BASE_INPUT, deps);
-
-    expect(result).toEqual({ error: "access_denied", status: 403 });
-    expect(deps.insertAccessGrant).not.toHaveBeenCalled();
-  });
-
-  it("perfil coach archivado (is_archived=true) -> access_denied, sin insertar grant (US-2)", async () => {
-    const deps = makeDeps({
-      queryReadonly: vi.fn().mockResolvedValue([{ role: "coach", is_archived: true }]),
+      queryReadonly: vi.fn().mockResolvedValue([{ role: "student" }]),
     });
 
     const result = await handleAuthorizeCallback(BASE_INPUT, deps);

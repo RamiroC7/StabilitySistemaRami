@@ -1183,7 +1183,7 @@ export default function StudentProfile() {
     );
   }
 
-  const avatarUrl = student.profileImageUrl || student.profileImage || null;
+  const avatarUrl = student.profileImageUrl || null;
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-card-dark">

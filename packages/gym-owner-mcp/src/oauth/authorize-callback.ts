@@ -4,9 +4,14 @@
  *
  * Esta es LA verificación más importante de la Fase C (US-2): NUNCA se emite
  * un `code` si el usuario autenticado en Supabase no resuelve a un coach
- * activo (`role = 'coach'` AND `is_archived = false` en `public.profiles`).
- * Cualquier otro caso (cliente inválido, sesión de Supabase inválida, no es
- * coach, coach archivado) devuelve un error SIN insertar ningún grant.
+ * (`role = 'coach'` en `public.profiles`). Cualquier otro caso (cliente
+ * inválido, sesión de Supabase inválida, no es coach) devuelve un error SIN
+ * insertar ningún grant.
+ *
+ * Nota: `profiles.is_archived` (revocar acceso a un coach puntual) existió
+ * en este chequeo pero se eliminó junto con la columna — nunca se usó en
+ * producción. Si se necesita revocar acceso a un coach en el futuro, hay que
+ * reintroducir un mecanismo para eso.
  *
  * `handleAuthorizeCallback` es la función pura y testeable: recibe sus
  * dependencias inyectadas (`deps`) en vez de importar módulos enteros, así
@@ -51,7 +56,6 @@ export type HandleAuthorizeCallbackResult = { redirectTo: string } | { error: st
 
 interface CoachProfileRow {
   role: string;
-  is_archived: boolean;
 }
 
 /**
@@ -74,21 +78,21 @@ export async function handleAuthorizeCallback(
     return { error: "access_denied", status: 401 };
   }
 
-  // Solo hacen falta role/is_archived acá: coach_label se resuelve aparte,
-  // en /token (T14), en el momento de emitir el access_token — evita pedir
+  // Solo hace falta role acá: coach_label se resuelve aparte, en /token
+  // (T14), en el momento de emitir el access_token — evita pedir
   // first_name/last_name en un paso que ni siquiera va a usarlos si el login
   // falla más adelante en /token.
   const profiles = await deps.queryReadonly<CoachProfileRow>(
-    `select role, is_archived from public.profiles where id = $1`,
+    `select role from public.profiles where id = $1`,
     [user.id],
   );
   const profile = profiles[0];
 
-  // US-2, lo más importante de todo el flujo: sin coach activo, NUNCA se
-  // inserta un grant ni se emite un code, sin importar el motivo puntual
-  // (no existe el profile, no es coach, o está archivado) — se le da al
-  // exterior el mismo `access_denied` en los tres casos.
-  if (!profile || profile.role !== "coach" || profile.is_archived) {
+  // US-2, lo más importante de todo el flujo: sin coach, NUNCA se inserta un
+  // grant ni se emite un code, sin importar el motivo puntual (no existe el
+  // profile o no es coach) — se le da al exterior el mismo `access_denied`
+  // en ambos casos.
+  if (!profile || profile.role !== "coach") {
     return { error: "access_denied", status: 403 };
   }
 

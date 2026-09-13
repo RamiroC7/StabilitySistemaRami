@@ -35,6 +35,11 @@ alter table mcp.access_tokens enable row level security;
 --     public.workout_completions, public.exercise_weight_logs,
 --     mcp.access_tokens
 --   to mcp_readonly;
+--
+-- Excepcion column-level (2026-09-12): list_students necesita saber si un
+-- alumno esta archivado, pero el resto de student_profiles queda fuera por
+-- PII (telefono, salud, etc.) -- se otorga SOLO esa columna, no la tabla.
+-- grant select (is_archived) on public.student_profiles to mcp_readonly;
 
 -- ─── Policies para mcp_readonly (una por tabla, SELECT, USING (true)) ─────────
 -- create policy mcp_ro_read on public.profiles                  for select to mcp_readonly using (true);
@@ -45,3 +50,4 @@ alter table mcp.access_tokens enable row level security;
 -- create policy mcp_ro_read on public.workout_completions       for select to mcp_readonly using (true);
 -- create policy mcp_ro_read on public.exercise_weight_logs      for select to mcp_readonly using (true);
 -- create policy mcp_ro_read on mcp.access_tokens                for select to mcp_readonly using (true);
+-- create policy mcp_ro_read on public.student_profiles          for select to mcp_readonly using (true);

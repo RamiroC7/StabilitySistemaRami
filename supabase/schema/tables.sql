@@ -1,8 +1,10 @@
 -- =====================================================================
 -- SNAPSHOT DEL ESQUEMA `public` — proyecto Supabase hcvytsitbsandaphsxyn
 -- Generado: 2026-08-30 (solo lectura, vía MCP execute_sql)
+-- Actualizado: 2026-09-12 tras limpieza de inconsistencias — ver
+-- supabase/migrations/20260912010000_cleanup_dead_columns.sql.
 -- NO ES UNA MIGRACIÓN EJECUTABLE. Ver README.md en esta carpeta.
--- 18 tablas.
+-- 16 tablas.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -14,10 +16,8 @@ CREATE TABLE public.profiles (
     first_name    text        NOT NULL,
     last_name     text        NOT NULL,
     role          text        NOT NULL,
-    profile_image text        NULL,
     created_at    timestamptz NULL DEFAULT now(),
     updated_at    timestamptz NULL DEFAULT now(),
-    is_archived   boolean     NULL DEFAULT false,
     CONSTRAINT profiles_pkey       PRIMARY KEY (id),
     CONSTRAINT profiles_email_key  UNIQUE (email),
     CONSTRAINT profiles_id_fkey    FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -46,7 +46,6 @@ CREATE TABLE public.student_profiles (
     medical_conditions  text          NULL,
     created_at          timestamptz   NULL DEFAULT now(),
     updated_at          timestamptz   NULL DEFAULT now(),
-    status              text          NULL DEFAULT 'active'::text,
     is_archived         boolean       NULL DEFAULT false,
     archived_at         timestamptz   NULL,
     CONSTRAINT student_profiles_pkey    PRIMARY KEY (id),
@@ -56,8 +55,7 @@ CREATE TABLE public.student_profiles (
     CONSTRAINT student_profiles_height_cm_check           CHECK (height_cm >= 100 AND height_cm <= 250),
     CONSTRAINT student_profiles_weight_kg_check           CHECK (weight_kg >= 30 AND weight_kg <= 300),
     CONSTRAINT student_profiles_primary_goal_check        CHECK (primary_goal = ANY (ARRAY['aesthetic'::text,'sports'::text,'health'::text,'rehabilitation'::text])),
-    CONSTRAINT student_profiles_training_experience_check CHECK (training_experience = ANY (ARRAY['none'::text,'beginner'::text,'intermediate'::text,'advanced'::text])),
-    CONSTRAINT student_profiles_status_check              CHECK (status = ANY (ARRAY['active'::text,'archived'::text,'deleted'::text]))
+    CONSTRAINT student_profiles_training_experience_check CHECK (training_experience = ANY (ARRAY['none'::text,'beginner'::text,'intermediate'::text,'advanced'::text]))
 );
 ALTER TABLE public.student_profiles ENABLE ROW LEVEL SECURITY;
 
@@ -91,7 +89,6 @@ CREATE TABLE public.training_plans (
     days_per_week    integer     NOT NULL,
     total_weeks      integer     NOT NULL,
     plan_type        text        NULL,
-    difficulty_level text        NULL,
     is_template      boolean     NULL DEFAULT false,
     is_archived      boolean     NULL DEFAULT false,
     created_at       timestamptz NULL DEFAULT now(),
@@ -133,7 +130,6 @@ CREATE TABLE public.training_plan_exercises (
     -- (ordinal 9 fue eliminado en el pasado)
     pause               text        NOT NULL,
     notes               text        NULL,
-    coach_instructions  text        NULL,
     display_order       integer     NOT NULL,
     created_at          timestamptz NULL DEFAULT now(),
     write_weight        boolean     NOT NULL DEFAULT false,
@@ -183,7 +179,6 @@ CREATE TABLE public.workout_completions (
     rpe              integer               NULL,
     total_sets_done  integer               NULL,
     series_log       jsonb                 NULL,
-    notes            text                  NULL,
     created_at       timestamptz           NOT NULL DEFAULT now(),
     mood             character varying(10) NULL,
     mood_comment     text                  NULL,
@@ -263,48 +258,6 @@ CREATE TABLE public.exercises (
     CONSTRAINT exercises_created_by_fkey  FOREIGN KEY (created_by)  REFERENCES public.profiles(id)            ON DELETE CASCADE
 );
 ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
-
--- ---------------------------------------------------------------------
--- body_measurements  (0 filas)
--- ---------------------------------------------------------------------
-CREATE TABLE public.body_measurements (
-    id          uuid        NOT NULL DEFAULT gen_random_uuid(),
-    student_id  uuid        NOT NULL,
-    date        date        NOT NULL DEFAULT CURRENT_DATE,
-    weight      numeric     NOT NULL,
-    body_fat    numeric     NULL,
-    muscle_mass numeric     NULL,
-    notes       text        NULL,
-    created_at  timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT body_measurements_pkey             PRIMARY KEY (id),
-    CONSTRAINT body_measurements_student_id_fkey  FOREIGN KEY (student_id) REFERENCES public.profiles(id) ON DELETE CASCADE,
-    CONSTRAINT body_measurements_weight_check      CHECK (weight      >= 20 AND weight      <= 400),
-    CONSTRAINT body_measurements_body_fat_check    CHECK (body_fat    >= 1  AND body_fat    <= 60),
-    CONSTRAINT body_measurements_muscle_mass_check CHECK (muscle_mass >= 10 AND muscle_mass <= 200)
-);
-ALTER TABLE public.body_measurements ENABLE ROW LEVEL SECURITY;
-
--- ---------------------------------------------------------------------
--- workout_logs  (0 filas) — legacy / no usada
--- ---------------------------------------------------------------------
-CREATE TABLE public.workout_logs (
-    id                  uuid        NOT NULL DEFAULT gen_random_uuid(),
-    student_id          uuid        NOT NULL,
-    assignment_id       uuid        NULL,
-    plan_name           text        NOT NULL DEFAULT ''::text,
-    day_name            text        NOT NULL DEFAULT ''::text,
-    date                date        NOT NULL DEFAULT CURRENT_DATE,
-    duration_minutes    integer     NOT NULL DEFAULT 0,
-    total_volume        numeric     NOT NULL DEFAULT 0,
-    exercises_completed integer     NOT NULL DEFAULT 0,
-    rpe                 integer     NULL,
-    created_at          timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT workout_logs_pkey               PRIMARY KEY (id),
-    CONSTRAINT workout_logs_student_id_fkey    FOREIGN KEY (student_id)    REFERENCES public.profiles(id)                  ON DELETE CASCADE,
-    CONSTRAINT workout_logs_assignment_id_fkey FOREIGN KEY (assignment_id) REFERENCES public.training_plan_assignments(id) ON DELETE SET NULL,
-    CONSTRAINT workout_logs_rpe_check          CHECK (rpe >= 1 AND rpe <= 10)
-);
-ALTER TABLE public.workout_logs ENABLE ROW LEVEL SECURITY;
 
 -- ---------------------------------------------------------------------
 -- macrocycles  (20 filas)

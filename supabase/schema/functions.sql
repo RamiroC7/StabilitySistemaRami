@@ -1,7 +1,9 @@
 -- =====================================================================
 -- FUNCIONES del esquema `public` — proyecto hcvytsitbsandaphsxyn
 -- Snapshot generado: 2026-08-30 (pg_get_functiondef). NO ES MIGRACIÓN.
--- 6 funciones. GRANTs idénticos en todas:
+-- Actualizado 2026-09-12: +2 funciones nuevas al final (grants distintos,
+-- ver cada una) — ver supabase/migrations/20260912010000_cleanup_dead_columns.sql.
+-- Las 6 originales. GRANTs idénticos en todas:
 --   {=X/postgres, postgres=X/postgres, anon=X/postgres,
 --    authenticated=X/postgres, service_role=X/postgres}
 -- es decir: EXECUTE para PUBLIC + anon + authenticated + service_role.
@@ -12,6 +14,9 @@
 -- Ranking mensual de asistencias: cuenta workout_completions del mes,
 -- con la fecha convertida a la zona America/Argentina/Buenos_Aires.
 -- ---------------------------------------------------------------------
+-- 2026-09-12: `p.profile_image` no existe mas (columna eliminada, ver
+-- supabase/migrations/20260912010000_cleanup_dead_columns.sql). La foto de
+-- perfil real vive en student_profiles.profile_image_url.
 CREATE OR REPLACE FUNCTION public.get_monthly_ranking(p_month_start date)
  RETURNS TABLE(student_id uuid, first_name text, last_name text, profile_image text, attendance_count bigint)
  LANGUAGE sql
@@ -22,14 +27,15 @@ AS $function$
     wc.student_id,
     p.first_name,
     p.last_name,
-    p.profile_image,
+    sp.profile_image_url AS profile_image,
     COUNT(*) AS attendance_count
   FROM public.workout_completions wc
   JOIN public.profiles p ON p.id = wc.student_id
+  LEFT JOIN public.student_profiles sp ON sp.id = wc.student_id
   WHERE
     DATE_TRUNC('month', wc.completed_at AT TIME ZONE 'America/Argentina/Buenos_Aires')::date
     = p_month_start
-  GROUP BY wc.student_id, p.first_name, p.last_name, p.profile_image
+  GROUP BY wc.student_id, p.first_name, p.last_name, sp.profile_image_url
   ORDER BY
     attendance_count DESC,
     MIN(wc.completed_at AT TIME ZONE 'America/Argentina/Buenos_Aires') ASC;
@@ -129,3 +135,79 @@ END;
 $function$;
 
 GRANT EXECUTE ON FUNCTION public.validate_student_profile() TO PUBLIC, anon, authenticated, service_role;
+
+-- ---------------------------------------------------------------------
+-- update_own_assignment_progress(...)  -- plpgsql, SECURITY DEFINER
+-- Agregada 2026-09-12. El alumno NO tiene UPDATE directo sobre
+-- training_plan_assignments (solo coaches, ver policies.sql) — esta función
+-- le permite actualizar SOLO completed_days/current_day_number de su propia
+-- fila (verifica student_id = auth.uid() adentro), sin abrir el resto de
+-- columnas a escritura desde el cliente. NO toca `status` — ver nota en
+-- complete_expired_assignments más abajo.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.update_own_assignment_progress(p_assignment_id uuid, p_completed_days integer, p_current_day_number integer DEFAULT NULL::integer)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_student_id uuid;
+begin
+  select student_id into v_student_id
+  from public.training_plan_assignments
+  where id = p_assignment_id
+  for update;
+
+  if v_student_id is null then
+    raise exception 'assignment not found';
+  end if;
+
+  if v_student_id <> auth.uid() then
+    raise exception 'not authorized';
+  end if;
+
+  if p_completed_days < 0 then
+    raise exception 'invalid completed_days: %', p_completed_days;
+  end if;
+
+  update public.training_plan_assignments
+  set
+    completed_days = p_completed_days,
+    current_day_number = coalesce(p_current_day_number, current_day_number),
+    updated_at = now()
+  where id = p_assignment_id;
+end;
+$function$;
+
+REVOKE ALL ON FUNCTION public.update_own_assignment_progress(uuid, integer, integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.update_own_assignment_progress(uuid, integer, integer) TO authenticated;
+
+-- ---------------------------------------------------------------------
+-- complete_expired_assignments()  -- sql, SECURITY DEFINER
+-- Agregada 2026-09-12, corrida por pg_cron a diario (job
+-- "complete-expired-assignments-daily", 06:00 UTC). Es el ÚNICO lugar que
+-- marca una asignación 'completed' automáticamente, y lo hace por end_date
+-- vencido — NUNCA por completed_days alcanzando total_days, porque
+-- total_days es la cantidad de días DISTINTOS de la plantilla semanal (no
+-- la duración real del programa): ese criterio marcaría 'completed' a
+-- cualquier alumno con una rutina que se repite apenas termine su primera
+-- semana, aunque el programa siga vigente por meses.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.complete_expired_assignments()
+ RETURNS void
+ LANGUAGE sql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+  update public.training_plan_assignments
+  set status = 'completed', updated_at = now()
+  where status = 'active'
+    and end_date < current_date;
+$function$;
+
+-- select cron.schedule(
+--   'complete-expired-assignments-daily',
+--   '0 6 * * *',
+--   $$select public.complete_expired_assignments();$$
+-- );

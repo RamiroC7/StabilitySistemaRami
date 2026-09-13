@@ -1,7 +1,14 @@
-// Recalcula completed_days/status de una asignacion a partir de las filas
-// reales en workout_completions — es la misma logica que ya usaba
-// performCompletionSync al guardar, extraida aca para poder reutilizarla
-// tambien al borrar un entrenamiento (sin duplicarla).
+// Recalcula completed_days de una asignacion a partir de las filas reales en
+// workout_completions — es la misma logica que ya usaba performCompletionSync
+// al guardar, extraida aca para poder reutilizarla tambien al borrar un
+// entrenamiento (sin duplicarla).
+//
+// NO toca `status`: total_days es la cantidad de dias DISTINTOS de la
+// plantilla semanal (no la duracion real del programa), asi que
+// "completed_days >= total_days" no es un criterio valido de "plan
+// terminado" — marcaria completado a cualquier alumno que termine su primera
+// semana. El status pasa a 'completed' solo por accion del coach o por el
+// cron de fin de vigencia (complete_expired_assignments, basado en end_date).
 import { supabase } from "@/lib/supabase";
 
 export async function recomputeAssignmentProgress(
@@ -13,7 +20,7 @@ export async function recomputeAssignmentProgress(
 ): Promise<{ success: boolean; error?: string }> {
   const { data: assignmentData, error: readErr } = await supabase
     .from("training_plan_assignments")
-    .select("completed_days, start_date, plan_id, training_plans(total_days)")
+    .select("completed_days, start_date")
     .eq("id", assignmentId)
     .single();
 
@@ -62,32 +69,17 @@ export async function recomputeAssignmentProgress(
   );
   const newCompletedDays = uniqueCompletedDays.size;
 
-  const planInfo = (
-    Array.isArray(assignmentData.training_plans)
-      ? assignmentData.training_plans[0]
-      : assignmentData.training_plans
-  ) as { total_days: number } | null;
-  const totalDays = planInfo?.total_days ?? 0;
-
-  const newStatus: "active" | "completed" =
-    newCompletedDays >= totalDays ? "completed" : "active";
-
-  const updatePayload: {
-    completed_days: number;
-    status: "active" | "completed";
-    current_day_number?: number;
-  } = {
-    completed_days: newCompletedDays,
-    status: newStatus,
-  };
-  if (touchedDayNumber !== undefined) {
-    updatePayload.current_day_number = touchedDayNumber;
-  }
-
-  const { error: updateErr } = await supabase
-    .from("training_plan_assignments")
-    .update(updatePayload)
-    .eq("id", assignmentId);
+  // El alumno no tiene UPDATE directo sobre training_plan_assignments (solo
+  // coaches, ver supabase/schema/policies.sql) — se usa una RPC
+  // SECURITY DEFINER que solo permite tocar el progreso de la propia fila.
+  const { error: updateErr } = await supabase.rpc(
+    "update_own_assignment_progress",
+    {
+      p_assignment_id: assignmentId,
+      p_completed_days: newCompletedDays,
+      p_current_day_number: touchedDayNumber ?? null,
+    },
+  );
 
   if (updateErr) return { success: false, error: updateErr.message };
 

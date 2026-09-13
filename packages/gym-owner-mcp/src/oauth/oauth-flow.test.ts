@@ -58,8 +58,8 @@ describe("flujo OAuth completo (T16, mocks — sin login real, ver el límite ar
     queryServiceMock.mockResolvedValueOnce([
       { client_id: client.client_id, redirect_uris: client.redirect_uris, client_name: client.client_name },
     ]);
-    // El perfil "logueado" resuelve a un coach activo (US-2).
-    queryReadonlyMock.mockResolvedValueOnce([{ role: "coach", is_archived: false }]);
+    // El perfil "logueado" resuelve a un coach (US-2).
+    queryReadonlyMock.mockResolvedValueOnce([{ role: "coach" }]);
     // insertAccessGrant (real, no mockeado): insert en access_grants.
     queryServiceMock.mockResolvedValueOnce([]);
 

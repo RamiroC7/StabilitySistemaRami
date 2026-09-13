@@ -21,7 +21,7 @@ sin consultar la base en vivo.
 
 | Archivo | Qué contiene |
 |---|---|
-| `tables.sql` | DDL reconstruido de las 18 tablas de `public`: columnas (tipo, nullability, default), PK, FK, UNIQUE, CHECK, `ENABLE ROW LEVEL SECURITY` y los triggers no internos. Cada tabla lleva su cantidad de filas al momento del snapshot. |
+| `tables.sql` | DDL reconstruido de las 16 tablas de `public`: columnas (tipo, nullability, default), PK, FK, UNIQUE, CHECK, `ENABLE ROW LEVEL SECURITY` y los triggers no internos. Cada tabla lleva su cantidad de filas al momento del snapshot. |
 | `policies.sql` | Las 71 RLS policies de `public`, con comando, roles, `USING` y `WITH CHECK` textuales. |
 | `functions.sql` | Las 6 funciones de `public` con su `SECURITY DEFINER/INVOKER` y GRANTs. |
 | `indexes.sql` | Índices de `public` (los de PK/UNIQUE quedan comentados) más notas sobre índices ausentes relevantes. |
