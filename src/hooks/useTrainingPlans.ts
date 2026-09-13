@@ -32,7 +32,6 @@ interface TrainingPlanExercise {
   notes: string | null;
   display_order: number;
   write_weight?: boolean;
-  coach_instructions?: string | null;
   cardio_duration_min?: number | null;
   circuit_group?: string | null;
 }
@@ -60,7 +59,6 @@ export interface TrainingPlanSummary {
   days_per_week: number;
   total_weeks: number;
   plan_type: string | null;
-  difficulty_level: string | null;
   is_template: boolean;
   is_archived: boolean;
   created_at: string;
@@ -147,7 +145,6 @@ export function useTrainingPlans() {
             days_per_week: daysPerWeek,
             total_weeks: totalWeeks,
             plan_type: planData.isTemplate ? "template" : "custom",
-            difficulty_level: null,
             is_template: planData.isTemplate,
             is_archived: false,
           },
@@ -201,7 +198,6 @@ export function useTrainingPlans() {
             carga: ex.carga || '-',
             pause: ex.pause || '-',
             notes: ex.notes || null,
-            coach_instructions: null,
             display_order: index,
             write_weight: ex.write_weight ?? false,
             cardio_duration_min: ex.cardio_duration_min !== undefined && ex.cardio_duration_min !== '' ? Number(ex.cardio_duration_min) : null,
@@ -465,7 +461,6 @@ export function useTrainingPlans() {
           carga: ex.carga || '-',
           pause: ex.pause || '-',
           notes: ex.notes || null,
-          coach_instructions: null,
           display_order: displayOrder,
           write_weight: ex.write_weight ?? false,
           cardio_duration_min: ex.cardio_duration_min !== undefined && ex.cardio_duration_min !== '' ? Number(ex.cardio_duration_min) : null,
@@ -556,7 +551,6 @@ export function useTrainingPlans() {
             days_per_week: originalPlan.days_per_week,
             total_weeks: originalPlan.total_weeks,
             plan_type: originalPlan.plan_type,
-            difficulty_level: originalPlan.difficulty_level,
             is_template: originalPlan.is_template,
             is_archived: false,
           },
@@ -613,7 +607,6 @@ export function useTrainingPlans() {
             carga: ex.carga || '-',
             pause: ex.pause || '-',
             notes: ex.notes,
-            coach_instructions: ex.coach_instructions,
             display_order: ex.display_order,
             write_weight: ex.write_weight ?? false,
             cardio_duration_min: ex.cardio_duration_min ?? null,
@@ -747,7 +740,7 @@ export function useTrainingPlans() {
 
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, first_name, last_name, email, profile_image")
+        .select("id, first_name, last_name, email")
         .in("id", studentIds);
 
       console.log(
@@ -776,7 +769,7 @@ export function useTrainingPlans() {
             studentId: row.student_id,
             fullName: profile ? `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || "Sin nombre" : "Sin nombre",
             email: profile?.email || "Sin email",
-            avatarUrl: profile?.profile_image || null,
+            avatarUrl: null,
             startDate: row.start_date,
             endDate: row.end_date,
             status: row.status || "active",
@@ -871,7 +864,6 @@ interface TrainingPlanExercise {
   notes: string | null;
   display_order: number;
   write_weight?: boolean;
-  coach_instructions?: string | null;
   cardio_duration_min?: number | null;
   circuit_group?: string | null;
 }
@@ -891,7 +883,6 @@ interface TrainingPlanDetail {
   total_weeks: number;
   days_per_week: number;
   plan_type: string | null;
-  difficulty_level: string | null;
   folder_id: string | null;
   training_plan_days?: TrainingPlanDetailDay[];
   training_plan_assignments?: { count: number }[];

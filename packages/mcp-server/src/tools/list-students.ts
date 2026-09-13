@@ -3,7 +3,7 @@
  *
  * `profiles` (role = 'student') LEFT JOIN LATERAL sobre la asignacion activa
  * mas reciente + `training_plans` para el titulo. Filtra por
- * `profiles.is_archived` segun `status`.
+ * `student_profiles.is_archived` segun `status`.
  */
 import type { McpServer } from "@modelcontextprotocol/server";
 import type { CallToolResult } from "@modelcontextprotocol/server";
@@ -15,7 +15,7 @@ const inputSchema = z.object({
     .enum(["active", "archived", "all"])
     .optional()
     .default("active")
-    .describe("Filtra por profiles.is_archived. Default: 'active' (no archivados)."),
+    .describe("Filtra por student_profiles.is_archived. Default: 'active' (no archivados)."),
 });
 
 interface ListStudentsRow {
@@ -31,13 +31,14 @@ interface ListStudentsRow {
 // si no, compara is_archived contra (status === 'archived').
 const SQL = `
   select
-    p.id           as student_id,
-    p.first_name   as first_name,
-    p.last_name    as last_name,
-    p.is_archived  as is_archived,
-    (a.id is not null) as has_active_assignment,
-    tp.title       as active_plan_title
+    p.id                          as student_id,
+    p.first_name                  as first_name,
+    p.last_name                   as last_name,
+    coalesce(sp.is_archived, false) as is_archived,
+    (a.id is not null)            as has_active_assignment,
+    tp.title                      as active_plan_title
   from public.profiles p
+  left join public.student_profiles sp on sp.id = p.id
   left join lateral (
     select ta.id, ta.plan_id
     from public.training_plan_assignments ta
@@ -47,7 +48,7 @@ const SQL = `
   ) a on true
   left join public.training_plans tp on tp.id = a.plan_id
   where p.role = 'student'
-    and ($1::text = 'all' or p.is_archived = ($1::text = 'archived'))
+    and ($1::text = 'all' or coalesce(sp.is_archived, false) = ($1::text = 'archived'))
   order by p.first_name asc, p.last_name asc
 `;
 

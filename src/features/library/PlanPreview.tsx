@@ -30,7 +30,6 @@ interface TrainingPlanExercise {
   carga: string;
   pause: string;
   notes: string | null;
-  coach_instructions: string | null;
   display_order: number;
   write_weight?: boolean;
   circuit_group?: string | null;

@@ -146,8 +146,7 @@ const userToProfessor = async (user: User): Promise<Professor | null> => {
       lastName: profile.last_name,
       role: profile.role as "student" | "coach",
       createdAt: profile.created_at,
-      profileImage:
-        studentProfile?.profile_image_url || profile.profile_image || undefined,
+      profileImage: studentProfile?.profile_image_url || undefined,
       hasCompletedProfile,
     };
   } catch (error) {

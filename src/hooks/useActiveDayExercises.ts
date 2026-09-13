@@ -65,7 +65,7 @@ export function useActiveDayExercises(
             supabase
               .from("training_plan_exercises")
               .select(
-                "id, exercise_name, series, reps, pause, stage_name, notes, coach_instructions, video_url, display_order, write_weight, carga, cardio_duration_min, circuit_group",
+                "id, exercise_name, series, reps, pause, stage_name, notes, video_url, display_order, write_weight, carga, cardio_duration_min, circuit_group",
               )
               .eq("day_id", id)
               .order("display_order", { ascending: true }),
@@ -89,7 +89,6 @@ export function useActiveDayExercises(
             pause: string;
             stage_name: string | null;
             notes: string | null;
-            coach_instructions: string | null;
             video_url: string | null;
             display_order: number;
             write_weight?: boolean;
@@ -108,8 +107,6 @@ export function useActiveDayExercises(
 
             const instructionParts: string[] = [];
             if (ex.notes) instructionParts.push(ex.notes);
-            if (ex.coach_instructions)
-              instructionParts.push(ex.coach_instructions);
 
             return {
               id: ex.id,

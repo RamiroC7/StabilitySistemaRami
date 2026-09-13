@@ -1,0 +1,11 @@
+-- DROP de training_plan_exercises.coach_instructions (sesión 2026-09-12).
+-- 0/7089 filas con valor. A diferencia de completed_days (ver
+-- 20260912020000), acá no había ningún bug de RLS bloqueando la escritura:
+-- el código que inserta ejercicios hardcodea `coach_instructions: null` en
+-- los dos lugares donde se crean (src/hooks/useTrainingPlans.ts), sin
+-- importar lo que el coach haya escrito — el único campo de texto real del
+-- formulario del plan es `notes`. En lectura, useActiveDayExercises.ts
+-- concatenaba notes + coach_instructions en un solo texto para el alumno;
+-- como coach_instructions siempre fue null, notes cargaba el 100% del
+-- contenido. Queda como resto de una UI que se consolidó en un solo campo.
+alter table public.training_plan_exercises drop column if exists coach_instructions;

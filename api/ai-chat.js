@@ -58,9 +58,8 @@ const ALLOWED_TABLES = [
   "exercise_stages",
   "plan_folders",
   // Agregadas el 5-sep-2026 a pedido de Ramiro, después de mandar el esquema
-  // real de la base.
-  "body_measurements",
-  "workout_logs",
+  // real de la base. body_measurements y workout_logs se sacaron el
+  // 12-sep-2026: tablas sin uso, 0 filas siempre, eliminadas de la base.
   "macrocycles",
   "macrocycle_months",
   "macrocycle_weeks",
@@ -82,8 +81,6 @@ const PROFILE_FK_COLUMNS = {
   // exercise_stages NO tiene coach_id — es un catálogo compartido entre
   // todos los coaches (name, color, display_order), no algo de un alumno.
   plan_folders: ["coach_id"],
-  body_measurements: ["student_id"],
-  workout_logs: ["student_id"],
   macrocycles: ["student_id"],
   // macrocycle_months, macrocycle_weeks y macrocycle_objectives no tienen
   // student_id ni coach_id directo (se llega al alumno a través de
@@ -128,8 +125,7 @@ const TOOLS = [
         "Usalo para responder preguntas sobre alumnos (tabla profiles), planes de entrenamiento " +
         "(training_plans, training_plan_days, training_plan_exercises), asignaciones de planes a " +
         "alumnos (training_plan_assignments), entrenamientos completados (workout_completions), " +
-        "cargas registradas (exercise_weight_logs), medidas corporales (body_measurements: peso, grasa " +
-        "corporal, masa muscular a lo largo del tiempo) y planificación a largo plazo por alumno " +
+        "cargas registradas (exercise_weight_logs) y planificación a largo plazo por alumno " +
         "(macrocycles, macrocycle_months, macrocycle_weeks, macrocycle_objectives). Podés llamarla " +
         "varias veces encadenadas, por ejemplo primero buscar el id de un alumno por nombre y después " +
         "usar ese id para filtrar otra tabla.",
@@ -461,7 +457,7 @@ async function buscarPlanDeAlumno(supabase, nombreAlumno) {
   const { data: plan, error: planError } = await supabase
     .from("training_plans")
     .select(
-      "title, description, start_date, end_date, total_days, days_per_week, total_weeks, plan_type, difficulty_level"
+      "title, description, start_date, end_date, total_days, days_per_week, total_weeks, plan_type"
     )
     .eq("id", asignacion.plan_id)
     .single();
@@ -513,10 +509,20 @@ async function buscarPlanDeAlumno(supabase, nombreAlumno) {
     fecha_fin: asignacion.end_date,
     dias_por_semana: plan?.days_per_week,
     semanas_totales: plan?.total_weeks,
-    nivel: plan?.difficulty_level || undefined,
     dias: diasConEjercicios,
     otros_planes_del_alumno: asignaciones.length - 1,
   };
+}
+
+// El archivado real de un alumno vive en student_profiles.is_archived (NO en
+// profiles — esa columna se eliminó el 12-sep-2026 por no usarse). Se pide
+// embebida via PostgREST ("student_profiles(is_archived)"), que según la
+// relación puede volver como objeto o como array de un elemento.
+function estaArchivado(alumno) {
+  const sp = Array.isArray(alumno.student_profiles)
+    ? alumno.student_profiles[0]
+    : alumno.student_profiles;
+  return sp?.is_archived ?? false;
 }
 
 // Alumnos activos que no completaron ningún entrenamiento en los últimos N
@@ -531,12 +537,12 @@ async function buscarAlumnosInactivos(supabase, diasParam) {
 
   const { data: alumnos, error: alumnosError } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, is_archived")
+    .select("id, first_name, last_name, student_profiles(is_archived)")
     .eq("role", "student");
 
   if (alumnosError) return { error: alumnosError.message };
 
-  const alumnosActivos = (alumnos || []).filter((a) => !a.is_archived);
+  const alumnosActivos = (alumnos || []).filter((a) => !estaArchivado(a));
   if (alumnosActivos.length === 0) {
     return { aviso: "No hay alumnos activos registrados." };
   }
@@ -600,11 +606,11 @@ async function buscarAlumnosInactivos(supabase, diasParam) {
 async function buscarAlumnosSinPlan(supabase) {
   const { data: alumnos, error: alumnosError } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, is_archived")
+    .select("id, first_name, last_name, student_profiles(is_archived)")
     .eq("role", "student");
   if (alumnosError) return { error: alumnosError.message };
 
-  const activos = (alumnos || []).filter((a) => !a.is_archived);
+  const activos = (alumnos || []).filter((a) => !estaArchivado(a));
   if (activos.length === 0) return { aviso: "No hay alumnos activos registrados." };
 
   const { data: asignacionesActivas, error: asignacionesError } = await supabase
@@ -681,11 +687,11 @@ async function calcularAdherenciaAlumnos(supabase, diasParam, minimoParam) {
 
   const { data: alumnos, error: alumnosError } = await supabase
     .from("profiles")
-    .select("id, first_name, last_name, is_archived")
+    .select("id, first_name, last_name, student_profiles(is_archived)")
     .eq("role", "student");
   if (alumnosError) return { error: alumnosError.message };
 
-  const activos = (alumnos || []).filter((a) => !a.is_archived);
+  const activos = (alumnos || []).filter((a) => !estaArchivado(a));
   if (activos.length === 0) return { aviso: "No hay alumnos activos registrados." };
 
   const { data: completados, error } = await supabase
@@ -996,36 +1002,35 @@ export default async function handler(req, res) {
     "modificar o borrar datos (ver SOLO LECTURA arriba) — mostrar información nunca está prohibido.\n\n" +
     "ESQUEMA real de las tablas — NUNCA inventes ni adivines un nombre de columna que no esté en esta " +
     "lista, aunque te parezca lógico que debería existir:\n" +
-    "- profiles: id, email, first_name, last_name, role ('student'|'coach'), profile_image, is_archived, " +
-    "created_at, updated_at. Alumno activo = role eq 'student' AND is_archived eq false. NO existen " +
-    "columnas 'status' ni 'is_active' en esta tabla.\n" +
+    "- profiles: id, email, first_name, last_name, role ('student'|'coach'), created_at, updated_at. " +
+    "NO existen columnas 'status', 'is_active', 'is_archived' ni 'profile_image' en esta tabla (se " +
+    "eliminaron el 12-sep-2026 por no usarse). Para saber si un alumno está activo/archivado o ver su " +
+    "foto de perfil, consultá student_profiles (is_archived, profile_image_url), NO profiles.\n" +
     "- student_profiles: id (mismo id que en profiles), phone, instagram, profile_image_url, birth_date, " +
     "gender ('male'|'female'|'other'), height_cm, weight_kg, activity_level " +
     "('sedentary'|'light'|'moderate'|'active'|'very_active'), primary_goal " +
     "('aesthetic'|'sports'|'health'|'rehabilitation'), training_experience " +
     "('none'|'beginner'|'intermediate'|'advanced'), sports, previous_injuries, medical_conditions, " +
-    "status ('active'|'archived'|'deleted'), is_archived, archived_at, created_at, updated_at. Datos " +
-    "personales/de salud del alumno — mostralos con total normalidad si te los piden, es el coach dueño " +
-    "de esos datos.\n" +
+    "is_archived, archived_at, created_at, updated_at. Alumno activo = role eq 'student' (en profiles) " +
+    "AND is_archived eq false (en student_profiles, NO en profiles). Datos personales/de salud del " +
+    "alumno — mostralos con total normalidad si te los piden, es el coach dueño de esos datos.\n" +
     "- training_plans: id, coach_id, title, description, start_date, end_date, total_days, " +
-    "days_per_week, total_weeks, plan_type, difficulty_level, is_template, is_archived, folder_id, " +
+    "days_per_week, total_weeks, plan_type, is_template, is_archived, folder_id, " +
     "created_at, updated_at.\n" +
     "- training_plan_days: id, plan_id, day_number, day_name, display_order, created_at.\n" +
     "- training_plan_exercises: id, day_id, stage_id, stage_name, exercise_name, video_url, series, " +
-    "reps, pause, notes, coach_instructions, display_order, write_weight, carga, cardio_duration_min, " +
+    "reps, pause, notes, display_order, write_weight, carga, cardio_duration_min, " +
     "circuit_group, created_at.\n" +
     "- training_plan_assignments: id, plan_id, student_id, coach_id, assigned_at, start_date, end_date, " +
     "status ('active'|'completed'|'paused'|'cancelled'), current_day_number, completed_days, " +
-    "personalization_notes, created_at, updated_at.\n" +
+    "created_at, updated_at. status pasa a 'completed' automáticamente cuando end_date ya pasó (cron " +
+    "diario) o por acción del coach — NO cuando completed_days alcanza cierto número (total_days de " +
+    "training_plans es la cantidad de días DISTINTOS de la plantilla semanal, no la duración real del " +
+    "programa).\n" +
     "- workout_completions: id, student_id, assignment_id, day_number, completed_at, rpe, " +
-    "total_sets_done, series_log, notes, mood, mood_comment, initial_mood, duration_minutes, created_at.\n" +
-    "- workout_logs: id, student_id, assignment_id, plan_name, day_name, date, duration_minutes, " +
-    "total_volume, exercises_completed, rpe, created_at (registro de entrenamientos separado de " +
-    "workout_completions — puede estar vacío o sin uso si la app ya no lo llena).\n" +
+    "total_sets_done, series_log, mood, mood_comment, initial_mood, duration_minutes, created_at.\n" +
     "- exercise_weight_logs: id, student_id, assignment_id, exercise_id, exercise_name, " +
     "plan_day_number, plan_day_name, series, sets_detail, logged_at, created_at.\n" +
-    "- body_measurements: id, student_id, date, weight, body_fat, muscle_mass, notes, created_at " +
-    "(seguimiento de progreso corporal del alumno a lo largo del tiempo).\n" +
     "- exercise_stages: id, name, color, display_order, created_at, updated_at (catálogo compartido " +
     "entre todos los coaches, no tiene coach_id ni pertenece a un alumno).\n" +
     "- plan_folders: id, coach_id, name, parent_id, created_at, updated_at.\n" +

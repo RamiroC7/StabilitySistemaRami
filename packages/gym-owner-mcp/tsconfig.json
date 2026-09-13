@@ -1,0 +1,33 @@
+{
+  // Autocontenido a propósito (NO extends "../../tsconfig.base.json"): este
+  // paquete se deploya a Vercel como directorio standalone (proyecto de
+  // Vercel separado, sin "Root Directory" de monorepo), así que Vercel solo
+  // ve los archivos de esta carpeta — un `extends` fuera de acá rompe el
+  // build ahí (probado: `error TS5083: Cannot read file '/tsconfig.base.json'`).
+  // Estas opciones son una copia de compilerOptions de ../../tsconfig.base.json;
+  // si esa base cambia, replicar acá a mano.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "moduleDetection": "force",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "outDir": "build",
+    "rootDir": "src",
+    "noEmit": false,
+    "sourceMap": true,
+    "declaration": false
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

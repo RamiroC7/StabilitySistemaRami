@@ -14,14 +14,12 @@ interface TrainingPlanAssignmentRow {
   training_plans: {
     title: string;
     plan_type: string | null;
-    difficulty_level: string | null;
     total_days: number;
     days_per_week: number;
     total_weeks: number;
   } | {
     title: string;
     plan_type: string | null;
-    difficulty_level: string | null;
     total_days: number;
     days_per_week: number;
     total_weeks: number;
@@ -36,7 +34,6 @@ export interface StudentProfile {
   fullName: string;
   email: string;
   createdAt: string;
-  profileImage: string | null;
 
   // From student_profiles (may be null if no entry)
   phone: string | null;
@@ -60,7 +57,6 @@ export interface AssignedPlan {
   planId: string;
   planTitle: string;
   planType: string | null;
-  difficultyLevel: string | null;
   totalDays: number;
   daysPerWeek: number;
   totalWeeks: number;
@@ -155,7 +151,6 @@ export function useStudentProfile(studentId: string | undefined) {
           first_name,
           last_name,
           email,
-          profile_image,
           created_at,
           student_profiles (
             phone,
@@ -193,7 +188,6 @@ export function useStudentProfile(studentId: string | undefined) {
           fullName: `${profileData.first_name} ${profileData.last_name}`,
           email: profileData.email,
           createdAt: profileData.created_at,
-          profileImage: profileData.profile_image,
           phone: (sp?.phone as string) ?? null,
           instagram: (sp?.instagram as string) ?? null,
           profileImageUrl: (sp?.profile_image_url as string) ?? null,
@@ -228,7 +222,6 @@ export function useStudentProfile(studentId: string | undefined) {
           training_plans (
             title,
             plan_type,
-            difficulty_level,
             total_days,
             days_per_week,
             total_weeks
@@ -251,7 +244,6 @@ export function useStudentProfile(studentId: string | undefined) {
               planId: a.plan_id as string,
               planTitle: (tp?.title as string) || "Plan sin nombre",
               planType: (tp?.plan_type as string) ?? null,
-              difficultyLevel: (tp?.difficulty_level as string) ?? null,
               totalDays: totalDays,
               daysPerWeek: (tp?.days_per_week as number) ?? totalDays,
               totalWeeks: (tp?.total_weeks as number) ?? 0,

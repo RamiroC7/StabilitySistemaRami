@@ -26,7 +26,6 @@ export interface Database {
           first_name: string;
           last_name: string;
           role: "student" | "coach";
-          profile_image: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -36,7 +35,6 @@ export interface Database {
           first_name: string;
           last_name: string;
           role: "student" | "coach";
-          profile_image?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -46,7 +44,6 @@ export interface Database {
           first_name?: string;
           last_name?: string;
           role?: "student" | "coach";
-          profile_image?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -92,7 +89,6 @@ export interface Database {
           days_per_week: number;
           total_weeks: number;
           plan_type: string | null;
-          difficulty_level: string | null;
           is_template: boolean;
           is_archived: boolean;
           created_at: string;
@@ -108,7 +104,6 @@ export interface Database {
           total_days: number;
           days_per_week: number;
           plan_type?: string | null;
-          difficulty_level?: string | null;
           is_template?: boolean;
           is_archived?: boolean;
           created_at?: string;
@@ -124,7 +119,6 @@ export interface Database {
           total_days?: number;
           days_per_week?: number;
           plan_type?: string | null;
-          difficulty_level?: string | null;
           is_template?: boolean;
           is_archived?: boolean;
           created_at?: string;
@@ -173,7 +167,6 @@ export interface Database {
           carga: string;
           pause: string;
           notes: string | null;
-          coach_instructions: string | null;
           display_order: number;
           write_weight: boolean;
           created_at: string;
@@ -191,7 +184,6 @@ export interface Database {
           carga?: string;
           pause?: string;
           notes?: string | null;
-          coach_instructions?: string | null;
           display_order?: number;
           write_weight?: boolean;
           created_at?: string;
@@ -209,7 +201,6 @@ export interface Database {
           carga?: string;
           pause?: string;
           notes?: string | null;
-          coach_instructions?: string | null;
           display_order?: number;
           write_weight?: boolean;
           created_at?: string;
@@ -228,7 +219,6 @@ export interface Database {
           status: "active" | "completed" | "paused" | "cancelled";
           current_day_number: number;
           completed_days: number;
-          personalization_notes: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -243,7 +233,6 @@ export interface Database {
           status?: "active" | "completed" | "paused" | "cancelled";
           current_day_number?: number;
           completed_days?: number;
-          personalization_notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -258,7 +247,6 @@ export interface Database {
           status?: "active" | "completed" | "paused" | "cancelled";
           current_day_number?: number;
           completed_days?: number;
-          personalization_notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -275,7 +263,6 @@ export interface Database {
           mood_comment: string | null;
           total_sets_done: number | null;
           series_log: Record<string, unknown> | null;
-          notes: string | null;
           created_at: string;
           duration_minutes: number | null;
         };
@@ -290,7 +277,6 @@ export interface Database {
           mood_comment?: string | null;
           total_sets_done?: number | null;
           series_log?: Record<string, unknown> | null;
-          notes?: string | null;
           created_at?: string;
           duration_minutes?: number | null;
         };
@@ -305,7 +291,6 @@ export interface Database {
           mood_comment?: string | null;
           total_sets_done?: number | null;
           series_log?: Record<string, unknown> | null;
-          notes?: string | null;
           created_at?: string;
           duration_minutes?: number | null;
         };

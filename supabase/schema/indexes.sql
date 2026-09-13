@@ -4,10 +4,6 @@
 -- Incluye los índices implícitos de PRIMARY KEY / UNIQUE (marcados).
 -- =====================================================================
 
--- body_measurements
--- CREATE UNIQUE INDEX body_measurements_pkey ON public.body_measurements USING btree (id);  -- PK
-CREATE INDEX idx_body_measurements_student_date ON public.body_measurements USING btree (student_id, date DESC);
-
 -- exercise_categories
 -- CREATE UNIQUE INDEX exercise_categories_pkey     ON public.exercise_categories USING btree (id);    -- PK
 -- CREATE UNIQUE INDEX exercise_categories_name_key ON public.exercise_categories USING btree (name);  -- UNIQUE
@@ -51,7 +47,9 @@ CREATE INDEX idx_plan_folders_coach_id ON public.plan_folders USING btree (coach
 -- CREATE UNIQUE INDEX profiles_email_key ON public.profiles USING btree (email);  -- UNIQUE
 CREATE INDEX idx_profiles_email       ON public.profiles USING btree (email);
 CREATE INDEX idx_profiles_role        ON public.profiles USING btree (role);
-CREATE INDEX idx_profiles_is_archived ON public.profiles USING btree (is_archived, created_at DESC);
+-- idx_profiles_is_archived: eliminado automaticamente por Postgres el
+-- 12-sep-2026 al hacer DROP COLUMN profiles.is_archived (ver
+-- supabase/migrations/20260912010000_cleanup_dead_columns.sql).
 
 -- student_profiles
 -- CREATE UNIQUE INDEX student_profiles_pkey ON public.student_profiles USING btree (id);  -- PK
@@ -59,7 +57,8 @@ CREATE INDEX idx_student_profiles_birth_date  ON public.student_profiles USING b
 CREATE INDEX idx_student_profiles_goal        ON public.student_profiles USING btree (primary_goal);
 CREATE INDEX idx_student_profiles_is_archived ON public.student_profiles USING btree (is_archived);
 CREATE INDEX idx_student_profiles_phone       ON public.student_profiles USING btree (phone);
-CREATE INDEX idx_student_profiles_status      ON public.student_profiles USING btree (status);
+-- idx_student_profiles_status: eliminado automaticamente por Postgres el
+-- 12-sep-2026 al hacer DROP COLUMN student_profiles.status.
 
 -- training_plan_assignments
 -- CREATE UNIQUE INDEX training_plan_assignments_pkey ON public.training_plan_assignments USING btree (id);  -- PK
@@ -90,7 +89,3 @@ CREATE INDEX idx_workout_completions_completed_at  ON public.workout_completions
 CREATE INDEX idx_workout_completions_assignment_id ON public.workout_completions USING btree (assignment_id);
 -- NOTA: los índices sobre student_id y completed_at son SEPARADOS; no existe
 -- el compuesto (student_id, completed_at).
-
--- workout_logs
--- CREATE UNIQUE INDEX workout_logs_pkey ON public.workout_logs USING btree (id);  -- PK
-CREATE INDEX idx_workout_logs_student_date ON public.workout_logs USING btree (student_id, date DESC);

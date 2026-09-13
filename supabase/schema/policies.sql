@@ -1,7 +1,7 @@
 -- =====================================================================
 -- RLS POLICIES del esquema `public` — proyecto hcvytsitbsandaphsxyn
 -- Snapshot generado: 2026-08-30 desde pg_policies. NO ES MIGRACIÓN.
--- Todas las 18 tablas tienen relrowsecurity = true, relforcerowsecurity = false.
+-- Todas las 16 tablas tienen relrowsecurity = true, relforcerowsecurity = false.
 -- Todas las policies son PERMISSIVE.
 --
 -- NOTA: varias policies están declaradas para el rol `public` (no
@@ -237,35 +237,9 @@ CREATE POLICY "Coaches can delete folders" ON public.plan_folders
   USING (EXISTS ( SELECT 1 FROM profiles WHERE ((profiles.id = auth.uid()) AND (profiles.role = 'coach'::text))));
 
 -- ---------------------------------------------------------------------
--- body_measurements
+-- body_measurements y workout_logs: tablas eliminadas 2026-09-12 (0 filas
+-- siempre, sin uso) — ver supabase/migrations/20260912010000_cleanup_dead_columns.sql.
 -- ---------------------------------------------------------------------
-CREATE POLICY "body_measurements: students can view own" ON public.body_measurements
-  AS PERMISSIVE FOR SELECT TO authenticated USING (student_id = auth.uid());
-
-CREATE POLICY "body_measurements: coaches can view students" ON public.body_measurements
-  AS PERMISSIVE FOR SELECT TO authenticated
-  USING (EXISTS ( SELECT 1 FROM training_plan_assignments tpa
-                  WHERE ((tpa.student_id = body_measurements.student_id) AND (tpa.coach_id = auth.uid()))));
-
-CREATE POLICY "body_measurements: students can insert own" ON public.body_measurements
-  AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (student_id = auth.uid());
-
-CREATE POLICY "body_measurements: students can update own" ON public.body_measurements
-  AS PERMISSIVE FOR UPDATE TO authenticated USING (student_id = auth.uid());
-
--- ---------------------------------------------------------------------
--- workout_logs (legacy)
--- ---------------------------------------------------------------------
-CREATE POLICY "workout_logs: students can view own" ON public.workout_logs
-  AS PERMISSIVE FOR SELECT TO authenticated USING (student_id = auth.uid());
-
-CREATE POLICY "workout_logs: coaches can view students" ON public.workout_logs
-  AS PERMISSIVE FOR SELECT TO authenticated
-  USING (EXISTS ( SELECT 1 FROM training_plan_assignments tpa
-                  WHERE ((tpa.student_id = workout_logs.student_id) AND (tpa.coach_id = auth.uid()))));
-
-CREATE POLICY "workout_logs: students can insert own" ON public.workout_logs
-  AS PERMISSIVE FOR INSERT TO authenticated WITH CHECK (student_id = auth.uid());
 
 -- ---------------------------------------------------------------------
 -- macrocycles / macrocycle_months / macrocycle_weeks / macrocycle_objectives
