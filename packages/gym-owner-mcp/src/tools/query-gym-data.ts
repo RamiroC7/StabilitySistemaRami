@@ -14,6 +14,14 @@ import { queryReadonly } from "../db.js";
 import { insertAuditRow, updateAuditRow } from "../audit.js";
 import type { CoachIdentity } from "../types.js";
 
+// Tope duro de filas devueltas por llamada. Es un default razonable (no
+// configurable por ahora): evita que un pedido de "todo sin resumir" del
+// coach devuelva cientos/miles de filas y agote la cuota de tokens de salida
+// de una cuenta Free (visto en una prueba de estrés real). El corte se hace
+// en JS sobre el array ya devuelto por `queryReadonly`, nunca reescribiendo
+// el SQL del coach.
+const MAX_ROWS = 200;
+
 const inputSchema = z.object({
   question: z
     .string()
@@ -77,17 +85,32 @@ export function createQueryGymDataHandler(
     }
 
     const durationMs = Date.now() - startedAt;
+    const totalCount = rows.length;
+    const truncated = totalCount > MAX_ROWS;
+    if (truncated) {
+      rows = rows.slice(0, MAX_ROWS);
+    }
+
+    // Auditoría: se graba el total real encontrado (antes del corte), no el
+    // efectivamente devuelto — para trazabilidad, importa saber qué tan
+    // pesada fue la query real contra la base, más allá de cuánto se le haya
+    // mandado a Claude después.
     // Best-effort: no bloquea la respuesta exitosa si falla el update.
-    await updateAuditRow(auditId, { rowCount: rows.length, durationMs, error: null });
+    await updateAuditRow(auditId, { rowCount: totalCount, durationMs, error: null });
 
     const structuredContent: QueryGymDataResult = {
       rows,
       row_count: rows.length,
-      truncated: false,
+      truncated,
     };
 
+    const summary = truncated
+      ? `Devolví ${rows.length} fila(s) (de ${totalCount} encontradas — el resultado se truncó; ` +
+        "pedí un rango más chico, un LIMIT, o un resumen/agregación si necesitás más detalle)."
+      : `Devolví ${rows.length} fila(s).`;
+
     return {
-      content: [{ type: "text", text: JSON.stringify(structuredContent, null, 2) }],
+      content: [{ type: "text", text: summary }],
       structuredContent,
     };
   };

@@ -698,3 +698,36 @@ Milestones de check-in con el usuario:
   con su checkbox sin marcar a propósito — es el único ítem real pendiente
   de esta fase y no depende de más trabajo de ingeniería, solo de que las
   otras 2 personas se logueen.
+
+## Post-cierre — hallazgos de la prueba de estrés en Free
+
+Contexto: ya con Fase 1 cerrada (T23), se hizo una prueba de estrés real del
+connector contra una cuenta Free de Claude. Un pedido del tipo "traeme todos
+los registros de peso de los últimos 6 meses, sin resumir" hizo que
+`query_gym_data` devolviera cientos de filas en una sola llamada, y ayudó a
+agotar la cuota de esa cuenta. De ahí salieron 3 hallazgos; se atendieron 2,
+el tercero queda anotado a propósito para más adelante.
+
+- [x] **Fix 1 — el resultado se mandaba duplicado.** El handler devolvía
+  `structuredContent` (lo que usa un cliente MCP moderno) y ADEMÁS el mismo
+  JSON pretty-printed como texto en `content` — doble gasto de tokens de
+  salida en cada llamada, no solo en las pesadas. `content` ahora es un
+  resumen corto en texto plano (`"Devolví N fila(s)."`), nunca repite las
+  filas.
+- [x] **Fix 2 — sin tope de filas.** `queryReadonly(sql)` podía devolver
+  cualquier cantidad de filas; `truncated` en el resultado estaba
+  hardcodeado en `false` y no se usaba. Se agregó `MAX_ROWS = 200` (const,
+  tope duro, no configurable por ahora) en `query-gym-data.ts`: el corte se
+  hace en JS sobre el array ya devuelto por `queryReadonly` (nunca se
+  reescribe el SQL del coach con un LIMIT inyectado). `row_count` queda
+  como lo efectivamente devuelto; el resumen de `content` avisa el
+  truncamiento mencionando el total real encontrado. La auditoría
+  (`updateAuditRow`) sigue grabando el total real encontrado (antes del
+  corte), no el truncado, para no perder trazabilidad de qué tan pesada fue
+  la query real.
+- [ ] **Hallazgo 3 (pendiente a propósito) — mapa de columnas en
+  `instructions`.** Embeber un mapa de columnas/tablas en las
+  `instructions` del server ahorraría tool calls de exploración de schema
+  (hoy el modelo arma el SQL a ciegas y a veces necesita ida y vuelta para
+  descubrir columnas). NO implementado todavía: queda pendiente hasta que
+  se acomoden algunas cosas de la base de datos primero.

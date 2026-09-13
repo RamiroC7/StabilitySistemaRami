@@ -49,6 +49,42 @@ describe("createQueryGymDataHandler", () => {
       "audit-1",
       expect.objectContaining({ rowCount: 2, error: null }),
     );
+    const text = (result.content?.[0] as { text: string }).text;
+    expect(text).toBe("Devolví 2 fila(s).");
+    expect(text).not.toContain("{");
+    expect(text).not.toContain('"id"');
+  });
+
+  it("más de MAX_ROWS filas: trunca a 200, marca truncated, y avisa el total real sin repetir filas", async () => {
+    insertAuditRowMock.mockResolvedValueOnce("audit-3");
+    const fakeRows = Array.from({ length: 250 }, (_, i) => ({
+      id: i,
+      marcador_unico_no_deberia_aparecer_en_content: `fila-${i}`,
+    }));
+    queryReadonlyMock.mockResolvedValueOnce(fakeRows);
+
+    const handler = createQueryGymDataHandler(identity);
+    const result = await handler({ question: "todos los registros", sql: "select * from t" });
+
+    expect(result.isError).toBeUndefined();
+    const structuredContent = result.structuredContent as {
+      rows: unknown[];
+      row_count: number;
+      truncated: boolean;
+    };
+    expect(structuredContent.rows.length).toBe(200);
+    expect(structuredContent.row_count).toBe(200);
+    expect(structuredContent.truncated).toBe(true);
+
+    const text = (result.content?.[0] as { text: string }).text;
+    expect(text).toContain("250");
+    expect(text).not.toContain("marcador_unico_no_deberia_aparecer_en_content");
+
+    // La auditoría graba el total real encontrado, no el truncado.
+    expect(updateAuditRowMock).toHaveBeenCalledWith(
+      "audit-3",
+      expect.objectContaining({ rowCount: 250, error: null }),
+    );
   });
 
   it("fail-closed (US-5): si insertAuditRow falla, propaga y NUNCA corre queryReadonly", async () => {
