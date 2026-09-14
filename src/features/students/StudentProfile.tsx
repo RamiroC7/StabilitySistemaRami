@@ -40,6 +40,7 @@ import { detectRpeAlert } from "@/lib/rpeHelpers";
 import PlanPreview from "@/features/library/PlanPreview";
 import ConfirmActionModal from "@/components/ConfirmActionModal";
 import { MacrocycleTab } from "@/components/MacrocycleTab";
+import FeedbackModal from "@/features/students/FeedbackModal";
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 
@@ -1077,6 +1078,7 @@ export default function StudentProfile() {
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showUnarchiveModal, setShowUnarchiveModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   const handleArchive = async () => {
@@ -1365,6 +1367,15 @@ export default function StudentProfile() {
                     </h3>
                   </div>
                   <div className="space-y-3">
+                    <button
+                      onClick={() => setShowFeedbackModal(true)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30 text-primary font-medium rounded-xl transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">
+                        insights
+                      </span>
+                      Feedback
+                    </button>
                     {student.isArchived ? (
                       <button
                         onClick={() => setShowUnarchiveModal(true)}
@@ -1616,6 +1627,16 @@ export default function StudentProfile() {
             </div>
           </div>
         </div>
+      )}
+
+      {showFeedbackModal && studentId && (
+        <FeedbackModal
+          isOpen={showFeedbackModal}
+          onClose={() => setShowFeedbackModal(false)}
+          studentId={studentId}
+          studentName={student.fullName}
+          studentPhone={student.phone}
+        />
       )}
     </div>
   );
