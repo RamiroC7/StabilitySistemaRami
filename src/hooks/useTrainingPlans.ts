@@ -272,9 +272,10 @@ export function useTrainingPlans() {
       if (planError) throw planError;
 
       // Sincronizar fechas en las asignaciones de este plan.
-      // También reseteamos completed_days y current_day_number en los assignments
-      // activos: si el coach reprogramó el plan hacia adelante, el progreso
-      // realizado en el período anterior no debe contar.
+      // Incluimos assignments "active" y "completed" para que no queden
+      // con fechas viejas si el cron los completó antes de la edición.
+      // También reseteamos completed_days, current_day_number y status,
+      // ya que el coach reprogramó el plan hacia adelante.
       const newStartDate = formatLocalDate(planData.startDate);
       const newEndDate = formatLocalDate(planData.endDate);
 
@@ -283,11 +284,12 @@ export function useTrainingPlans() {
         .update({
           start_date: newStartDate,
           end_date: newEndDate,
+          status: "active",
           completed_days: 0,
           current_day_number: 1,
         })
         .eq("plan_id", planId)
-        .eq("status", "active");
+        .in("status", ["active", "completed"]);
 
       if (cascadeError) {
         console.warn("Could not sync training plan assignments:", cascadeError);
@@ -650,7 +652,7 @@ export function useTrainingPlans() {
         .select("student_id")
         .eq("plan_id", planId)
         .in("student_id", studentIds)
-        .neq("status", "cancelled");
+        .eq("status", "active");
 
       if (checkError) throw checkError;
 
