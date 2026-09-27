@@ -155,6 +155,43 @@ export function getFeedbackAvailability(
     : getMonthlyFeedbackWindow(now);
 }
 
+// ── Recordatorio ("hoy toca enviar feedback") ───────────────────────────────
+//
+// A diferencia de getFeedbackAvailability (que dice si HOY se puede ABRIR el
+// feedback de un alumno puntual), esto es el aviso general para el
+// profesor: "hoy es un día de feedback". Corre los lunes completos (aviso
+// semanal) y el día 1 de cada mes completo (aviso mensual) — puede haber
+// hasta 2 avisos el mismo día si un 1° cae lunes.
+export interface FeedbackReminder {
+  key: "week" | "month";
+  message: string;
+}
+
+export function getFeedbackReminders(now: Date = new Date()): FeedbackReminder[] {
+  const p = toArtParts(now);
+  const reminders: FeedbackReminder[] = [];
+
+  if (p.weekday === 1) {
+    reminders.push({ key: "week", message: "Feedback semanal" });
+  }
+
+  if (p.date === 1) {
+    const prevMonthLastDay = new Date(Date.UTC(p.year, p.month, 0));
+    const monthName = prevMonthLastDay.toLocaleDateString("es-AR", {
+      month: "long",
+      timeZone: "UTC",
+    });
+    reminders.push({
+      key: "month",
+      // Salto de línea intencional: en el toast "¡envía los feedback!" va
+      // en su propia línea, debajo de "Finalizó <mes>".
+      message: `Finalizó ${monthName}\n¡envía los feedback!`,
+    });
+  }
+
+  return reminders;
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type AttendanceLevel = "complete" | "partial";
@@ -464,7 +501,7 @@ export function computeFeedbackData(
 // ?feedbackNow=2026-06-01T10:00:00-03:00 en la URL, para poder probar las
 // ventanas de disponibilidad con datos reales sin esperar al día/hora real.
 // Sacar esta función y su uso en useFeedbackData una vez terminada la prueba.
-function getDebugNowOverride(): Date | undefined {
+export function getDebugNowOverride(): Date | undefined {
   if (typeof window === "undefined") return undefined;
   const raw = new URLSearchParams(window.location.search).get("feedbackNow");
   if (!raw) return undefined;

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   computeFeedbackData,
   getFeedbackAvailability,
+  getFeedbackReminders,
   type FeedbackPlanInput,
   type FeedbackCompletionInput,
   type FeedbackExerciseGroupInput,
@@ -94,6 +95,40 @@ describe("getFeedbackAvailability — mensual", () => {
   it("cruce de año: el 1 de enero reporta diciembre del año anterior", () => {
     const a = getFeedbackAvailability("month", art(2026, 1, 1, 12, 0));
     expect(a.rangeStart).toEqual(art(2025, 12, 1, 0, 0));
+  });
+});
+
+describe("getFeedbackReminders", () => {
+  it("el lunes (cualquier hora del día) avisa 'Feedback semanal'", () => {
+    expect(getFeedbackReminders(art(2026, 1, 26, 0, 0))).toEqual([
+      { key: "week", message: "Feedback semanal" },
+    ]);
+    expect(getFeedbackReminders(art(2026, 1, 26, 23, 59))).toEqual([
+      { key: "week", message: "Feedback semanal" },
+    ]);
+  });
+
+  it("el día 1 del mes avisa que terminó el mes anterior", () => {
+    expect(getFeedbackReminders(art(2026, 1, 1, 12, 0))).toEqual([
+      { key: "month", message: "Finalizó diciembre\n¡envía los feedback!" },
+    ]);
+  });
+
+  it("si el día 1 cae lunes, avisa las dos cosas", () => {
+    // 1/6/2026 es lunes (verificado con node -e).
+    expect(getFeedbackReminders(art(2026, 6, 1, 10, 0))).toEqual([
+      { key: "week", message: "Feedback semanal" },
+      { key: "month", message: "Finalizó mayo\n¡envía los feedback!" },
+    ]);
+  });
+
+  it("cualquier otro día no muestra ningún aviso", () => {
+    expect(getFeedbackReminders(art(2026, 1, 27, 12, 0))).toEqual([]); // martes
+    expect(getFeedbackReminders(art(2026, 1, 2, 12, 0))).toEqual([]); // día 2
+  });
+
+  it("cruce de año: el 1 de enero avisa que terminó diciembre del año anterior", () => {
+    expect(getFeedbackReminders(art(2026, 1, 1, 12, 0))[0].message).toContain("diciembre");
   });
 });
 
