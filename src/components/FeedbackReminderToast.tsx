@@ -40,7 +40,9 @@ export function FeedbackReminderToast() {
       { position: "top-right", duration: Infinity },
     );
 
-    return () => toast.dismiss(id);
+    return () => {
+      toast.dismiss(id);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
