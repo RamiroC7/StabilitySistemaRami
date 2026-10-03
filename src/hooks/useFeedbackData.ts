@@ -84,11 +84,10 @@ export interface FeedbackAvailability {
 }
 
 // Semanal: semana calendario lunes-domingo. El reporte de la semana que
-// termina un domingo se habilita ESE domingo a las 10:00 ART (ya terminó el
-// entrenamiento de la semana) y sigue visible hasta el lunes siguiente a las
-// 20:00 ART — ese lunes es un día "de repaso", no se suma a la semana
-// reportada. Fuera de esa ventana (martes a sábado, domingo antes de las 10,
-// o lunes después de las 20) no está disponible.
+// termina un domingo se habilita ESE domingo a las 00:00 ART y sigue visible
+// todo el lunes siguiente (hasta las 23:59:59.999 ART) — ese lunes es un día
+// "de repaso", no se suma a la semana reportada. Fuera de esa ventana
+// (martes a sábado) no está disponible.
 function getWeeklyFeedbackWindow(now: Date): FeedbackAvailability {
   const p = toArtParts(now);
 
@@ -102,8 +101,8 @@ function getWeeklyFeedbackWindow(now: Date): FeedbackAvailability {
   const sundayAnchor = artWallClockToUtc(p.year, p.month, p.date - p.weekday, 12, 0);
   const sp = toArtParts(sundayAnchor);
 
-  const windowStart = artWallClockToUtc(sp.year, sp.month, sp.date, 10, 0);
-  const windowEnd = artWallClockToUtc(sp.year, sp.month, sp.date + 1, 20, 0);
+  const windowStart = artWallClockToUtc(sp.year, sp.month, sp.date, 0, 0);
+  const windowEnd = artWallClockToUtc(sp.year, sp.month, sp.date + 2, 0, 0);
   const available = now >= windowStart && now < windowEnd;
 
   const rangeStart = artDayStart(sp.year, sp.month, sp.date - 6);
@@ -114,18 +113,18 @@ function getWeeklyFeedbackWindow(now: Date): FeedbackAvailability {
     p.year,
     p.month,
     p.date + daysUntilNextSunday,
-    10,
+    0,
     0,
   );
 
   return { available, rangeStart, rangeEnd, nextAvailableAt };
 }
 
-// Mensual: se habilita todo el día 1 del mes (00:00 a 23:59:59.999 ART) y
-// muestra el mes calendario anterior completo.
+// Mensual: se habilita el día 1 del mes a las 00:00 ART y sigue visible hasta
+// el día 5 a las 23:59:59.999 ART. Muestra el mes calendario anterior completo.
 function getMonthlyFeedbackWindow(now: Date): FeedbackAvailability {
   const p = toArtParts(now);
-  const available = p.date === 1;
+  const available = p.date >= 1 && p.date <= 5;
 
   // Date.UTC(year, month, 0) = "día 0" del mes actual = último día del mes
   // anterior. Da mes/año anteriores correctos sin lógica manual para

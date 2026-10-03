@@ -22,7 +22,7 @@ export default function ExerciseList({
     isCategoryModalOpen,
     setIsCategoryModalOpen
 }: ExerciseListProps) {
-    const { professor } = useAuthStore()
+    const professor = useAuthStore((s) => s.professor)
     const { globalExercises, isGlobalExercisesLoading, refreshGlobalExercises } = useTrainingStore()
     const { categories } = useCategories()
     const [filter, setFilter] = useState<string>("Todos")

@@ -165,6 +165,8 @@ export default function PlanExpirations() {
                                                                     <img
                                                                         src={assignment.studentImage}
                                                                         alt={assignment.studentName}
+                                                                        loading="lazy"
+                                                                        decoding="async"
                                                                         className="w-full h-full object-cover"
                                                                     />
                                                                 ) : (

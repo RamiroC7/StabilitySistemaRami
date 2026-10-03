@@ -23,27 +23,26 @@ function art(year: number, month: number, day: number, hour: number, minute = 0)
 // 1/2/2026 (que también es día 1 del mes).
 
 describe("getFeedbackAvailability — semanal", () => {
-  it("no disponible el domingo antes de las 10:00 ART", () => {
-    const a = getFeedbackAvailability("week", art(2026, 1, 25, 9, 59));
-    expect(a.available).toBe(false);
+  it("no disponible el sábado", () => {
+    expect(getFeedbackAvailability("week", art(2026, 1, 24, 23, 59)).available).toBe(false);
   });
 
-  it("disponible el domingo desde las 10:00 ART, reporta la semana lunes-domingo que termina hoy", () => {
-    const a = getFeedbackAvailability("week", art(2026, 1, 25, 10, 0));
+  it("disponible el domingo desde las 00:00 ART, reporta la semana lunes-domingo que termina hoy", () => {
+    const a = getFeedbackAvailability("week", art(2026, 1, 25, 0, 0));
     expect(a.available).toBe(true);
     expect(a.rangeStart).toEqual(art(2026, 1, 19, 0, 0));
     expect(a.rangeEnd.getTime()).toBe(art(2026, 1, 26, 0, 0).getTime() - 1);
   });
 
-  it("sigue disponible el lunes siguiente antes de las 20:00 ART, sin sumar ese lunes a la semana", () => {
-    const a = getFeedbackAvailability("week", art(2026, 1, 26, 19, 59));
+  it("sigue disponible todo el lunes siguiente, sin sumar ese lunes a la semana", () => {
+    const a = getFeedbackAvailability("week", art(2026, 1, 26, 23, 59));
     expect(a.available).toBe(true);
     expect(a.rangeEnd.getTime()).toBe(art(2026, 1, 26, 0, 0).getTime() - 1);
   });
 
-  it("deja de estar disponible el lunes a las 20:00 ART en punto (fin exclusivo)", () => {
-    expect(getFeedbackAvailability("week", art(2026, 1, 26, 20, 0)).available).toBe(false);
-    expect(getFeedbackAvailability("week", art(2026, 1, 26, 20, 1)).available).toBe(false);
+  it("deja de estar disponible el martes a las 00:00 ART en punto (fin exclusivo)", () => {
+    expect(getFeedbackAvailability("week", art(2026, 1, 27, 0, 0)).available).toBe(false);
+    expect(getFeedbackAvailability("week", art(2026, 1, 27, 0, 1)).available).toBe(false);
   });
 
   it("no disponible de martes a sábado", () => {
@@ -52,38 +51,34 @@ describe("getFeedbackAvailability — semanal", () => {
     }
   });
 
-  it("nextAvailableAt siempre apunta al próximo domingo 10:00 ART", () => {
-    const nextSunday10 = art(2026, 2, 1, 10, 0);
+  it("nextAvailableAt siempre apunta al próximo domingo 00:00 ART", () => {
+    const nextSunday0 = art(2026, 2, 1, 0, 0);
     for (const day of [27, 28, 29, 30, 31]) {
       expect(getFeedbackAvailability("week", art(2026, 1, day, 12, 0)).nextAvailableAt).toEqual(
-        nextSunday10,
+        nextSunday0,
       );
     }
-    expect(getFeedbackAvailability("week", art(2026, 1, 26, 20, 1)).nextAvailableAt).toEqual(
-      nextSunday10,
-    );
-    // Domingo antes de habilitarse: apunta a hoy mismo a las 10.
-    expect(getFeedbackAvailability("week", art(2026, 1, 25, 5, 0)).nextAvailableAt).toEqual(
-      art(2026, 1, 25, 10, 0),
-    );
   });
 });
 
 describe("getFeedbackAvailability — mensual", () => {
-  it("disponible todo el día 1 del mes, muestra el mes calendario anterior completo", () => {
+  it("disponible del día 1 00:00 al día 5 23:59 ART, muestra el mes calendario anterior completo", () => {
     const early = getFeedbackAvailability("month", art(2026, 1, 1, 0, 0));
     expect(early.available).toBe(true);
     expect(early.rangeStart).toEqual(art(2025, 12, 1, 0, 0));
     expect(early.rangeEnd.getTime()).toBe(art(2026, 1, 1, 0, 0).getTime() - 1);
 
-    const late = getFeedbackAvailability("month", art(2026, 1, 1, 23, 59));
+    const late = getFeedbackAvailability("month", art(2026, 1, 5, 23, 59));
     expect(late.available).toBe(true);
+    expect(late.rangeStart).toEqual(art(2025, 12, 1, 0, 0));
   });
 
-  it("no disponible del día 2 en adelante; nextAvailableAt es el 1 del mes siguiente", () => {
-    const a = getFeedbackAvailability("month", art(2026, 1, 15, 12, 0));
+  it("no disponible desde el día 6 ni el último día del mes anterior; nextAvailableAt es el 1 del mes siguiente", () => {
+    const a = getFeedbackAvailability("month", art(2026, 1, 6, 0, 0));
     expect(a.available).toBe(false);
     expect(a.nextAvailableAt).toEqual(art(2026, 2, 1, 0, 0));
+    expect(getFeedbackAvailability("month", art(2026, 1, 15, 12, 0)).available).toBe(false);
+    expect(getFeedbackAvailability("month", art(2025, 12, 31, 23, 59)).available).toBe(false);
   });
 
   it("respeta años bisiestos: el 1 de marzo reporta un febrero de 29 días", () => {
@@ -137,7 +132,7 @@ describe("computeFeedbackData — fuera de ventana", () => {
     const result = computeFeedbackData("week", [], [], [], art(2026, 1, 28, 12, 0));
     expect(result.available).toBe(false);
     if (result.available) throw new Error("expected not available");
-    expect(result.nextAvailableAt).toEqual(art(2026, 2, 1, 10, 0));
+    expect(result.nextAvailableAt).toEqual(art(2026, 2, 1, 0, 0));
   });
 
   it("mensual: devuelve available:false con nextAvailableAt en vez de datos", () => {

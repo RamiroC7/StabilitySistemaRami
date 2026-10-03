@@ -28,7 +28,7 @@ const gradientOverlay =
 
 export default function TrainingHome() {
   const navigate = useNavigate();
-  const { professor } = useAuthStore();
+  const professor = useAuthStore((s) => s.professor);
   const setAssignmentContext = useTrainingStore((s) => s.setAssignmentContext);
   
   // ── Check if there's a workout in progress ──

@@ -17,7 +17,7 @@ type FormData = z.infer<typeof schema>;
 export default function ForgotPassword() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [sent, setSent] = useState(false);
-    const { resetPassword } = useAuthStore();
+    const resetPassword = useAuthStore((s) => s.resetPassword);
 
     const {
         register,

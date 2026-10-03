@@ -236,6 +236,8 @@ export default function AssignedStudentsModal({
                           <img
                             src={student.avatarUrl}
                             alt={student.fullName}
+                            loading="lazy"
+                            decoding="async"
                             className="w-full h-full object-cover"
                           />
                         ) : (

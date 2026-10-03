@@ -8,7 +8,7 @@ import { FeedbackReminderToast } from "@/components/FeedbackReminderToast";
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { fetchGlobalExercises } = useTrainingStore();
+  const fetchGlobalExercises = useTrainingStore((s) => s.fetchGlobalExercises);
 
   useEffect(() => {
     // Pre-load exercises into Zustand global store when app mounts

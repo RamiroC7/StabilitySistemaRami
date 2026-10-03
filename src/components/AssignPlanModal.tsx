@@ -269,6 +269,8 @@ export default function AssignPlanModal({
                           <img
                             src={student.profileImageUrl}
                             alt={student.fullName}
+                            loading="lazy"
+                            decoding="async"
                             className="w-11 h-11 rounded-full object-cover"
                           />
                         ) : (

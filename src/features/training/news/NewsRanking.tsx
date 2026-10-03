@@ -341,7 +341,7 @@ function TermsSheet({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function NewsRanking() {
-  const { professor } = useAuthStore();
+  const professor = useAuthStore((s) => s.professor);
   const currentId = professor?.id ?? "";
   const navigate = useNavigate();
 
