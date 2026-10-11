@@ -227,7 +227,10 @@ eliminan `log/debug/info` (`esbuild.pure`). No volver a `drop: ["console"]`. �
 
 ---
 
-## Estado de las reglas (actualizado 2026-10-10)
+## Estado de las reglas (actualizado 2026-10-11)
+
+Verificado con: `tsc`, lint (0 errores), 192 tests unitarios, build, `check:perf` (JS critico 558 kB / 170 kB gzip, precache 2.071 kB),
+`check:migrations`, `check:icons` (264 iconos) y 16 e2e, ya con `main` mergeado (PR #11).
 
 | Regla | Estado | Proteccion |
 |---|---|---|
@@ -235,8 +238,8 @@ eliminan `log/debug/info` (`esbuild.pure`). No volver a `drop: ["console"]`. �
 | R2, R3, R4, R5 | ✅ cumplidas (+ preload del chunk de Login solo en `/login`: LCP 3,4 → 3,1 s) | `check:perf` + e2e + `perfConfig.test.ts` |
 | R7, R8 | ✅ cumplidas | `check:perf` |
 | R9 | ✅ cumplida (lazy en ocultos/listas, logo con width/height) | e2e + `perfConfig.test.ts` |
-| R35 | ✅ cumplida (miniaturas + compresion al subir + fallback) | `avatar.test.ts` + e2e |
-| R10 | ✅ cumplida (1.138 → 12 kB) | `check:icons` + e2e `fonts` |
+| R35 | ✅ cumplida: miniaturas (`avatarSrc`), compresion al subir (`compressAvatar`: <= 320 px WebP ~40 kB), imagen predeterminada (`DEFAULT_AVATAR`), fallback a la original. Las 30 fotos en uso ya recomprimidas en el bucket (84 MB → 284 kB; 53 archivos viejos borrados con backup local). **Excepcion:** `FeedbackCard` usa la foto original porque la exporta `html2canvas` | `avatar.test.ts` + `compressAvatar.test.ts` + e2e `avatares` y `avatar-upload` |
+| R10 | ✅ cumplida (1.138 → 12 kB; lista regenerada hoy tras sumar iconos `main`; se arreglo `fontUrl` en `scripts/material-icons.mjs`) | `check:icons` + e2e `fonts` |
 | R11 | ✅ cumplida (**verificar `curl -I` en produccion tras el deploy**) | `perfConfig.test.ts` |
 | R12, R13 | ✅ en `StudentsList` (el resto de las listas es chico) | e2e `students-list` |
 | R14 | ⏳ sin necesidad hoy (39 alumnos): virtualizar al pasar de ~100 | 👀 |
@@ -248,8 +251,10 @@ eliminan `log/debug/info` (`esbuild.pure`). No volver a `drop: ["console"]`. �
 | R22 | ✅ `useBusinessMetrics` en paralelo | 👀 |
 | R23 | ✅ TTL + SWR | `dataCacheStore.test.ts` |
 | R24 | ✅ suscripciones muertas eliminadas; **la publicacion `supabase_realtime` esta vacia** | 👀 |
-| R26, R27, R28, R29, R30 | ✅ cumplidas (advisors en 0 / 3 intencionales) | `check:migrations` |
+| R26, R27, R28, R29, R30 | ✅ cumplidas (advisors en 0; seguridad: 2 SECURITY DEFINER intencionales + contrasenas filtradas **no disponible en plan gratuito**, aceptado) | `check:migrations` |
 | R31-R34 | ✅ cumplidas | CI |
+
+**Pendiente de verificar tras el deploy:** `curl -I` de `/assets/*` (R11). **Opcionales abiertos:** LCP del login ~3,1 s (objetivo 2,5 s; exige sacar supabase del camino de `/login`), `EXPLAIN` de los indices compuestos cuando haya > 10 mil completions, medir Lighthouse de `/inicio` con sesion real.
 
 Las reglas aplican a TODO codigo nuevo o modificado. Al tocar un archivo con deuda
 (`NewPlan`, `StudentProfile`), preferir saldarla en el mismo cambio.
