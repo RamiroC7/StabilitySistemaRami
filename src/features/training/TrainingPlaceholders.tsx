@@ -1,3 +1,4 @@
+import { avatarSrc } from "@/lib/avatar";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import { Wrench, LogOut, Settings, GraduationCap, Trophy } from "lucide-react";
@@ -89,15 +90,13 @@ export function TrainingProfile() {
         <div className="relative h-24 bg-gradient-to-br from-primary to-brand-blue">
           <div className="absolute -bottom-10 left-4">
             <div className="w-20 h-20 rounded-2xl bg-white dark:bg-slate-800 border-4 border-white dark:border-slate-900 shadow-lg flex items-center justify-center overflow-hidden">
-              {professor.profileImage ? (
-                <img
-                  src={professor.profileImage}
-                  alt={professor.firstName}
-                  className="w-full h-full object-cover"
+              <img
+                src={avatarSrc(professor.profileImage, 80)}
+                alt={professor.firstName}
+                width={80}
+                height={80}
+                className="w-full h-full object-cover"
                 />
-              ) : (
-                <GraduationCap size={32} className="text-slate-400" strokeWidth={1.5} />
-              )}
             </div>
           </div>
         </div>

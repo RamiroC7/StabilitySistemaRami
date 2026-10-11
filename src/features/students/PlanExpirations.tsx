@@ -1,6 +1,7 @@
+import { avatarSrc } from "@/lib/avatar";
 import { useState, useMemo } from "react";
 import { useStudents } from "../../hooks/useStudents";
-import { Plus, Search, Calendar, ChevronRight, User } from "lucide-react";
+import { Plus, Search, Calendar, ChevronRight } from "lucide-react";
 import { format, isPast, isToday, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { Link } from "react-router-dom";
@@ -161,15 +162,13 @@ export default function PlanExpirations() {
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 overflow-hidden flex-shrink-0 flex items-center justify-center">
-                                                                {assignment.studentImage ? (
-                                                                    <img
-                                                                        src={assignment.studentImage}
-                                                                        alt={assignment.studentName}
-                                                                        className="w-full h-full object-cover"
-                                                                    />
-                                                                ) : (
-                                                                    <User className="w-4 h-4 text-slate-400" />
-                                                                )}
+                                                                <img loading="lazy" decoding="async"
+                                                                    src={avatarSrc(assignment.studentImage, 32)}
+                                                                    alt={assignment.studentName}
+                                                                    width={32}
+                                                                    height={32}
+                                                                    className="w-full h-full object-cover"
+                                                                />
                                                             </div>
                                                             <span className="font-semibold text-slate-900 dark:text-white">
                                                                 {assignment.studentName}

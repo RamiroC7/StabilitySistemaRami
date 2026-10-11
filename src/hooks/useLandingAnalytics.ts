@@ -496,16 +496,23 @@ export function useLandingAnalytics() {
   }, [timeRange, fetchMetrics]);
 
   useEffect(() => {
-    if (isAutoRefresh) {
-      intervalRef.current = setInterval(() => {
-        fetchMetrics(timeRange, true);
-      }, 15000);
-    } else if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
+    if (!isAutoRefresh) return;
+
+    // Regla R17: el auto-refresh se pausa con la pestaña oculta (no gasta red
+    // ni cuota de PostHog en segundo plano) y refresca al volver a mostrarse.
+    intervalRef.current = setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      fetchMetrics(timeRange, true);
+    }, 15000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") fetchMetrics(timeRange, true);
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [isAutoRefresh, timeRange, fetchMetrics]);
 

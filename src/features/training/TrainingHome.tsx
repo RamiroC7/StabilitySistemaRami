@@ -1,3 +1,4 @@
+import { avatarSrc } from "@/lib/avatar";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import { useTrainingStore } from "@/features/training/store/trainingStore";
@@ -13,7 +14,6 @@ import {
   Dumbbell,
   CalendarX2,
   CheckCircle2,
-  User,
   PlayCircle,
   X,
   Eye,
@@ -62,7 +62,7 @@ export default function TrainingHome() {
     if (sessionStorage.getItem(SESSION_KEY)) return; // already warm
     supabase
       .from("student_profiles")
-      .select("*")
+      .select("phone, instagram, birth_date, gender, activity_level, primary_goal, training_experience, sports, previous_injuries, medical_conditions, height_cm, weight_kg")
       .eq("id", professor.id)
       .single()
       .then(({ data }) => {
@@ -299,15 +299,13 @@ export default function TrainingHome() {
           type="button"
           title="Ir a mi perfil"
         >
-          {professor?.profileImage ? (
-            <img
-              src={professor.profileImage}
-              alt={firstName}
-              className="w-full h-full rounded-full object-cover"
+          <img
+            src={avatarSrc(professor?.profileImage, 44)}
+            alt={firstName}
+            width={44}
+            height={44}
+            className="w-full h-full rounded-full object-cover"
             />
-          ) : (
-            <User size={22} className="text-white" strokeWidth={1.5} />
-          )}
         </button>
       </div>
 

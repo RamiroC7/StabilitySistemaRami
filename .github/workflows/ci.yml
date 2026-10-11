@@ -58,3 +58,32 @@ jobs:
 
       - name: Build de produccion
         run: npm run build
+
+      - name: Migraciones SQL nuevas cumplen las reglas de rendimiento (R26/R27/R30)
+        run: npm run check:migrations
+
+      - name: Iconos de Material Symbols cubiertos por la fuente recortada (R10)
+        run: npm run check:icons
+
+      - name: Presupuestos de rendimiento (bundle, precache, imagenes, assets huerfanos)
+        # Reglas en .claude/skills/rendimiento-stability/SKILL.md. Si falla, algo
+        # pesado entro al camino critico o se commiteo un asset sin usar.
+        run: npm run check:perf
+
+      - name: Instalar Chromium para E2E
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E de rendimiento (Playwright contra el build)
+        # Usa el dist/ recien buildeado (con las variables de mentira de arriba)
+        # servido por `vite preview`; Supabase va mockeado en cada test.
+        run: npm run test:e2e
+
+      - name: Subir reporte de Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

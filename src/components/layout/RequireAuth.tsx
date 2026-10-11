@@ -16,6 +16,8 @@ function AuthLoadingScreen() {
       {/* Logo — mismo asset que genera el splash estático de iOS */}
       <img
         src="/logo-nuevo-sinfondo.svg"
+        width={209}
+        height={213}
         alt="Stability"
         style={{ width: "55vw", maxWidth: 280, height: "auto" }}
       />

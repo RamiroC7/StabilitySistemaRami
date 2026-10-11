@@ -4,15 +4,56 @@ import react from "@vitejs/plugin-react";
 // config de Vite (mismos plugins, mismo alias "@"), pero con los tipos de
 // Vitest sumados encima — asi el bloque "test" de abajo no pisa nada y no
 // hace falta un vitest.config.ts aparte que duplique alias/plugins.
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 import { VitePWA } from "vite-plugin-pwa";
 import { ViteImageOptimizer } from "vite-plugin-image-optimizer";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
+import { visualizer } from "rollup-plugin-visualizer";
+import type { Plugin } from "vite";
+
+// R2/R4: el login es la puerta de entrada y su LCP (el logo) depende de que
+// baje el chunk lazy de Login + vendor-forms, que el navegador solo descubre
+// despues de ejecutar el entry. Se inyecta un modulepreload SOLO cuando la URL
+// es /login, asi el resto de las rutas no paga esos bytes.
+function preloadLoginRoute(): Plugin {
+  return {
+    name: "preload-login-route",
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, ctx) {
+        const bundle = ctx.bundle;
+        if (!bundle) return;
+        const chunks = Object.values(bundle).flatMap((c) =>
+          c.type === "chunk" ? [c] : [],
+        );
+        const login = chunks.find((c) =>
+          /features\/auth\/Login\.tsx$/.test(c.facadeModuleId ?? ""),
+        );
+        if (!login) return;
+        const entry = chunks.find((c) => c.isEntry);
+        const already = new Set<string>(
+          entry ? [entry.fileName, ...entry.imports] : [],
+        );
+        const files = [login.fileName, ...login.imports].filter(
+          (f) => !already.has(f),
+        );
+        return [
+          {
+            tag: "script",
+            injectTo: "head",
+            children: `if(location.pathname==="/login"){for(var f of ${JSON.stringify(files)}){var l=document.createElement("link");l.rel="modulepreload";l.crossOrigin="";l.href="/"+f;document.head.appendChild(l)}}`,
+          },
+        ];
+      },
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
+    preloadLoginRoute(),
     // Optimizar imágenes ANTES de VitePWA para que Workbox use los assets ya comprimidos
     ViteImageOptimizer({
       png: { quality: 80 },
@@ -64,6 +105,18 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Solo precachear assets estáticos e index.html (necesario para navigateFallback)
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff2}"],
+        // Chunks pesados de uso puntual (exportar PDF, dashboard de metricas):
+        // no se precachean para que instalar el SW no baje ~1.1 MB que la
+        // mayoria nunca usa. Los cubre el runtimeCaching de JS
+        // (StaleWhileRevalidate): se cachean la primera vez que se piden.
+        // Trade-off: PDF/dashboard no andan offline hasta el primer uso.
+        globIgnores: [
+          "**/jspdf*.js",
+          "**/html2canvas*.js",
+          "**/vendor-charts*.js",
+          "**/index.es-*.js",
+          "**/purify.es-*.js",
+        ],
         cleanupOutdatedCaches: true,
         // Ambos en true: nuevo SW toma control inmediatamente
         clientsClaim: true,
@@ -131,6 +184,14 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
+    // Analisis de bundle: `ANALYZE=1 npx vite build` genera stats.html (treemap)
+    // y stats.json (para scripts). No corre en el build normal ni en CI.
+    ...(process.env.ANALYZE
+      ? [
+          visualizer({ filename: "stats.html", gzipSize: true, brotliSize: true }),
+          visualizer({ filename: "stats.json", template: "raw-data", gzipSize: true }),
+        ]
+      : []),
     // Subida de source maps a Sentry: solo cuando el build corre con el
     // token seteado (Vercel). Sin SENTRY_AUTH_TOKEN el build local/preview
     // sigue funcionando igual, simplemente no sube nada.
@@ -167,7 +228,13 @@ export default defineConfig(({ mode }) => ({
     },
   },
   esbuild: {
-    drop: mode === "production" ? (["console", "debugger"] as const) : [],
+    // Solo se eliminan log/debug/info: console.error y console.warn quedan en
+    // produccion para no perder diagnostico de problemas reales.
+    pure:
+      mode === "production"
+        ? ["console.log", "console.debug", "console.info"]
+        : [],
+    drop: mode === "production" ? (["debugger"] as const) : [],
   },
   build: {
     // "hidden": genera los .map para que Sentry pueda desminificar los
@@ -237,6 +304,8 @@ export default defineConfig(({ mode }) => ({
   test: {
     // Funciones puras (fechas, metricas, agrupacion) — no hace falta un DOM.
     environment: "node",
+    // Los e2e (Playwright) tienen su propio runner: que Vitest no los levante.
+    exclude: [...configDefaults.exclude, "e2e/**"],
     // Fija reloj/zona horaria antes de cada test (ver vitest.setup.ts). Sin
     // esto, un test con fechas puede pasar en una maquina y fallar en otra
     // (o en el servidor de CI) solo por la hora/zona en la que corre.

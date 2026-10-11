@@ -100,22 +100,8 @@ export function useMonthlyRanking(monthStart: string): UseMonthlyRankingReturn {
       fetchRanking(false);
     }
 
-    // Set up Realtime subscription for live updates
-    const channel = supabase
-      .channel("public:workout_completions:ranking")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "workout_completions" },
-        () => {
-          // When any workout completion changes, quietly refetch the ranking
-          fetchRanking(false);
-        }
-      )
-      .subscribe();
-
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
     };
   }, [monthStart, isLoaded, setMonthlyRankingData]);
 

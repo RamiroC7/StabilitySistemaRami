@@ -18,7 +18,7 @@ export function useExerciseStages() {
 
             const { data, error: fetchError } = await supabase
                 .from('exercise_stages')
-                .select('*')
+                .select('id, name, display_order, color, created_at, updated_at')
                 .order('display_order', { ascending: true });
 
             if (fetchError) throw fetchError;

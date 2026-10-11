@@ -119,7 +119,7 @@ function Podium({
             )}
 
             {/* Mascot */}
-            <img
+            <img loading="lazy" decoding="async"
               src={mascotSrc[i]}
               alt={`Puesto ${rankNum}`}
               className={cn(

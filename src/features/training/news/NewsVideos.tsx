@@ -26,8 +26,10 @@ export default function NewsVideos() {
         <div className="max-w-sm w-full text-center space-y-6 -mt-12">
           {/* Logo */}
           <div className="mb-2">
-            <img
+            <img loading="lazy" decoding="async"
               src="/logo-nuevo-sinfondo.svg"
+              width={209}
+              height={213}
               alt="Stability"
               className="w-32 h-32 mx-auto object-contain"
             />

@@ -17,7 +17,7 @@ export function useCategories() {
 
     return {
         categories,
-        isLoading: isLoading && !isLoaded,
+        isLoading: isLoading && !isLoaded && categories.length === 0,
         isLoaded,
         /** Fuerza recarga (usar tras crear/editar/eliminar una categoría). */
         reload: () => {

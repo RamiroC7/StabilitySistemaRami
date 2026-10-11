@@ -61,7 +61,8 @@ export function useStudents() {
 
   return {
     students,
-    loading: isLoading && !isLoaded,
+    // Solo hay "loading" si no hay nada que mostrar (SWR: con dato viejo no se vacia la UI).
+    loading: isLoading && !isLoaded && students.length === 0,
     error: null,
     reload,
   };

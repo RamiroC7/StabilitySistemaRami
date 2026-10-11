@@ -1,3 +1,4 @@
+import { avatarSrc } from "@/lib/avatar";
 import { useState, useMemo, useCallback, useRef, useId } from "react";
 import { useStudents } from "@/hooks/useStudents";
 import type { StudentWithAssignments } from "@/hooks/useStudents";
@@ -265,19 +266,13 @@ export default function AssignPlanModal({
                       </span>
 
                       <div className="flex-shrink-0">
-                        {student.profileImageUrl ? (
-                          <img
-                            src={student.profileImageUrl}
-                            alt={student.fullName}
-                            className="w-11 h-11 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-11 h-11 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-gray-400 text-xl">
-                              person
-                            </span>
-                          </div>
-                        )}
+                        <img loading="lazy" decoding="async"
+                          src={avatarSrc(student.profileImageUrl, 44)}
+                          alt={student.fullName}
+                          width={44}
+                          height={44}
+                          className="w-11 h-11 rounded-full object-cover"
+                        />
                       </div>
 
                       <div className="flex-1 min-w-0">

@@ -212,6 +212,8 @@ export default function WorkoutComplete() {
         <div className="w-20 h-20 rounded-2xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center relative z-10 transition-transform duration-500 group-hover:scale-105">
           <img
             src="/logo-nuevo-sinfondo.svg"
+            width={209}
+            height={213}
             alt="Logo"
             className="w-16 h-auto object-contain"
           />

@@ -11,30 +11,56 @@ import { initSentry } from "@/lib/sentry";
 // los demas globales de observabilidad (Analytics, SpeedInsights mas abajo).
 initSentry();
 
+type NetworkInformation = { saveData?: boolean; effectiveType?: string };
+
+// No gastar datos del usuario en prefetch si pidio ahorro de datos o esta en 2g.
+function shouldSkipPrefetch(): boolean {
+  const connection = (
+    navigator as Navigator & { connection?: NetworkInformation }
+  ).connection;
+  return (
+    !!connection?.saveData ||
+    connection?.effectiveType === "slow-2g" ||
+    connection?.effectiveType === "2g"
+  );
+}
+
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
+  // Rol (o null si no hay sesion): decide QUE chunks vale la pena precargar.
+  const role = useAuthStore((state) => state.professor?.role ?? null);
 
   useEffect(() => {
     initializeAuth();
-
-    // Prefetch the most-visited route chunks while the user sees the splash/login.
-    // Uses a delay so prefetch never competes with the initial React + Supabase bundles.
-    // Fire-and-forget: errors are intentionally swallowed.
-    const prefetchTimer = setTimeout(() => {
-      // Auth
-      import("@/features/auth/Login").catch(() => {});
-      // Coach sidebar tabs
-      import("@/features/students/StudentsList").catch(() => {});
-      import("@/features/plans/NewPlan").catch(() => {});
-      import("@/features/library/Library").catch(() => {});
-      import("@/features/students/PlanExpirations").catch(() => {});
-      import("@/features/metrics/BusinessMetrics").catch(() => {});
-      // Student shell
-      import("@/features/training/TrainingHome").catch(() => {});
-    }, 1500);
-
-    return () => clearTimeout(prefetchTimer);
   }, [initializeAuth]);
+
+  useEffect(() => {
+    if (shouldSkipPrefetch()) return;
+
+    // Prefetch por rol, en idle y despues del primer render. Un alumno nunca
+    // baja los chunks del coach (ni viceversa). BusinessMetrics (recharts,
+    // ~390 kB) queda afuera a proposito: se baja recien al entrar al dashboard.
+    // Fire-and-forget: los errores se ignoran a proposito.
+    const prefetch = () => {
+      if (role === null) {
+        import("@/features/auth/Login").catch(() => {});
+      } else if (role === "coach") {
+        import("@/features/students/StudentsList").catch(() => {});
+        import("@/features/plans/NewPlan").catch(() => {});
+        import("@/features/library/Library").catch(() => {});
+        import("@/features/students/PlanExpirations").catch(() => {});
+      } else {
+        import("@/features/training/TrainingHome").catch(() => {});
+      }
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(prefetch, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const timer = setTimeout(prefetch, 1500);
+    return () => clearTimeout(timer);
+  }, [role]);
 
   return (
     <>

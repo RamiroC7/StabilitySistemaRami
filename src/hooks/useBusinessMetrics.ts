@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { create } from "zustand";
 import { supabase } from "../lib/supabase";
+import { fetchAllRows } from "../lib/supabasePagination";
 
 // --- Types ---
 
@@ -624,53 +625,58 @@ const useMetricsStore = create<MetricsStore>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      // 1. Obtener perfiles de estudiantes
-      const { data: students, error: fetchError } = await supabase
-        .from("profiles")
-        .select(`
-          id,
-          created_at,
-          student_profiles!inner (
-            birth_date,
-            gender,
-            primary_goal,
-            is_archived,
-            archived_at,
-            training_experience,
-            sports
-          )
-        `)
-        .eq("role", "student");
-
-      if (fetchError) throw fetchError;
-
-      // 2. Obtener finalizaciones de rutinas
-      const { data: completions, error: completionsError } = await supabase
-        .from("workout_completions")
-        .select("id, student_id, assignment_id, completed_at, initial_mood, mood, rpe");
-
-      if (completionsError) throw completionsError;
-
-      // 3. Obtener asignaciones y sus días por semana
-      const { data: assignments, error: assignmentsError } = await supabase
-        .from("training_plan_assignments")
-        .select(`
-          id,
-          student_id,
-          assigned_at,
-          start_date,
-          end_date,
-          status,
-          training_plans (
-            days_per_week
-          )
-        `);
-
-      if (assignmentsError) throw assignmentsError;
-
-      const rawStudents = students ?? [];
-      const rawCompletions = completions ?? [];
-      const rawAssignments = assignments ?? [];
+      // Regla R19/R22: las tres lecturas son "de toda la tabla", asi que van
+      // paginadas (PostgREST corta en 1.000 filas sin avisar) y en paralelo.
+      // El order por id es obligatorio para que las paginas no se solapen.
+      const [rawStudents, rawCompletions, rawAssignments] = await Promise.all([
+        // 1. Perfiles de estudiantes
+        fetchAllRows((from, to) =>
+          supabase
+            .from("profiles")
+            .select(`
+              id,
+              created_at,
+              student_profiles!inner (
+                birth_date,
+                gender,
+                primary_goal,
+                is_archived,
+                archived_at,
+                training_experience,
+                sports
+              )
+            `)
+            .eq("role", "student")
+            .order("id")
+            .range(from, to),
+        ),
+        // 2. Finalizaciones de rutinas
+        fetchAllRows((from, to) =>
+          supabase
+            .from("workout_completions")
+            .select("id, student_id, assignment_id, completed_at, initial_mood, mood, rpe")
+            .order("id")
+            .range(from, to),
+        ),
+        // 3. Asignaciones y sus dias por semana
+        fetchAllRows((from, to) =>
+          supabase
+            .from("training_plan_assignments")
+            .select(`
+              id,
+              student_id,
+              assigned_at,
+              start_date,
+              end_date,
+              status,
+              training_plans (
+                days_per_week
+              )
+            `)
+            .order("id")
+            .range(from, to),
+        ),
+      ]);
 
       const now = new Date();
       const historicalData = buildHistoricalMetrics(now, rawStudents);

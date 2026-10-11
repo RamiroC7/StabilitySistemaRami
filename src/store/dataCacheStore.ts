@@ -10,6 +10,15 @@ import type { ExerciseGroup } from "@/hooks/useExerciseWeightLogs";
 import type { WorkoutDay } from "@/features/training/types";
 import type { RankingEntry } from "@/hooks/useMonthlyRanking";
 
+// ── Vencimiento de la cache (regla R23: stale-while-revalidate) ─────────────
+// Pasado este tiempo, el proximo uso del hook refetchea EN SEGUNDO PLANO
+// mostrando mientras tanto el dato viejo (no se vacia la UI).
+export const STALE_MS = {
+    students: 5 * 60 * 1000,
+    plans: 5 * 60 * 1000,
+    categories: 30 * 60 * 1000,
+} as const;
+
 // ── Types ───────────────────────────────────────────────────────────────────
 
 export interface ExerciseCategory {
@@ -23,16 +32,19 @@ interface DataCacheState {
     students: Student[];
     isStudentsLoaded: boolean;
     isStudentsLoading: boolean;
+    studentsFetchedAt: number;
 
     // ── Plans ─────────────────────────────────────────────────────────────────
     plans: TrainingPlanSummary[];
     isPlansLoaded: boolean;
     isPlansLoading: boolean;
+    plansFetchedAt: number;
 
     // ── Categories ────────────────────────────────────────────────────────────
     categories: ExerciseCategory[];
     isCategoriesLoaded: boolean;
     isCategoriesLoading: boolean;
+    categoriesFetchedAt: number;
 
     // ── Parameterized Caches (por ID) ─────────────────────────────────────────
 
@@ -123,14 +135,17 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
     students: [],
     isStudentsLoaded: false,
     isStudentsLoading: false,
+    studentsFetchedAt: 0,
 
     plans: [],
     isPlansLoaded: false,
     isPlansLoading: false,
+    plansFetchedAt: 0,
 
     categories: [],
     isCategoriesLoaded: false,
     isCategoriesLoading: false,
+    categoriesFetchedAt: 0,
 
     // Por ID
     studentProfiles: {},
@@ -159,19 +174,20 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
     setStudents: (students) => set({ students }),
     markStudentsLoaded: () => set({ isStudentsLoaded: true }),
     setStudentsLoading: (loading) => set({ isStudentsLoading: loading }),
-    reloadStudents: () => set({ isStudentsLoaded: false, students: [] }),
+    // Invalidar NO vacia la lista: se sigue mostrando el dato viejo mientras se refetchea.
+    reloadStudents: () => set({ isStudentsLoaded: false }),
 
     // ── Plans actions ──────────────────────────────────────────────────────────
     setPlans: (plans) => set({ plans }),
     markPlansLoaded: () => set({ isPlansLoaded: true }),
     setPlansLoading: (loading) => set({ isPlansLoading: loading }),
-    reloadPlans: () => set({ isPlansLoaded: false, plans: [] }),
+    reloadPlans: () => set({ isPlansLoaded: false }),
 
     // ── Categories actions ─────────────────────────────────────────────────────
     setCategories: (categories) => set({ categories }),
     markCategoriesLoaded: () => set({ isCategoriesLoaded: true }),
     setCategoriesLoading: (loading) => set({ isCategoriesLoading: loading }),
-    reloadCategories: () => set({ isCategoriesLoaded: false, categories: [] }),
+    reloadCategories: () => set({ isCategoriesLoaded: false }),
 
     // ── Actions por ID ─────────────────────────────────────────────────────────
     setStudentProfileData: (id, profile, plans) => set((s) => ({
@@ -280,9 +296,11 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
             students: [],
             isStudentsLoaded: false,
             isStudentsLoading: false,
+            studentsFetchedAt: 0,
             plans: [],
             isPlansLoaded: false,
             isPlansLoading: false,
+            plansFetchedAt: 0,
             // Categorías no son por usuario → no las limpiamos al hacer logout
             studentProfiles: {},
             studentAssignedPlans: {},
@@ -306,25 +324,16 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
     fetchStudents: async (professorId: string) => {
         const state = get();
         // Guard: si ya está cargado o hay otro fetch en curso → no hacer nada
-        if (state.isStudentsLoaded || state.isStudentsLoading) return;
+        // Fresca (cargada y dentro del TTL) o ya en curso -> no hacer nada.
+        if (state.isStudentsLoading) return;
+        if (state.isStudentsLoaded && Date.now() - state.studentsFetchedAt < STALE_MS.students) return;
 
         set({ isStudentsLoading: true });
 
         try {
-            // Primer fetch: profiles con rol student
-            const { data: profilesData, error: profilesError } = await supabase
-                .from("profiles")
-                .select("id, first_name, last_name")
-                .eq("role", "student")
-                .order("created_at", { ascending: false });
-
-            if (profilesError) throw profilesError;
-            if (!profilesData || profilesData.length === 0) {
-                set({ students: [], isStudentsLoaded: true, isStudentsLoading: false });
-                return;
-            }
-
-            const studentIds = profilesData.map((p) => p.id);
+            // Un solo request: la RPC arma alumnos + perfil + asignaciones vigentes
+            // en el servidor (regla R20/R21: nada de .in() con la lista de ids en
+            // la URL, que revienta el limite de largo con unos cientos de alumnos).
             const d = new Date();
             const todayISO =
                 d.getFullYear() +
@@ -333,110 +342,45 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
                 "-" +
                 String(d.getDate()).padStart(2, "0");
 
-            // Fetches 2 y 3 en paralelo
-            const [
-                { data: studentDetails, error: detailsError },
-                { data: assignmentsData, error: assignmentsError },
-            ] = await Promise.all([
-                supabase
-                    .from("student_profiles")
-                    .select(
-                        "id, profile_image_url, training_experience, primary_goal, activity_level, phone, instagram, is_archived",
-                    )
-                    .in("id", studentIds),
-                supabase
-                    .from("training_plan_assignments")
-                    .select(
-                        `student_id, plan_id, start_date, end_date, status,
-             training_plans ( title, total_days, days_per_week )`,
-                    )
-                    .in("student_id", studentIds)
-                    .in("status", ["active", "paused"])
-                    .gte("end_date", todayISO),
-            ]);
+            const { data, error } = await supabase.rpc("get_students_overview", {
+                p_today: todayISO,
+            });
+            if (error) throw error;
 
-            if (detailsError) throw detailsError;
-            if (assignmentsError) {
-                console.warn("[dataCacheStore] assignments warn:", assignmentsError);
+            interface StudentOverviewRow {
+                student_id: string;
+                first_name: string;
+                last_name: string;
+                profile_image_url: string | null;
+                training_experience: string | null;
+                primary_goal: string | null;
+                activity_level: string | null;
+                phone: string | null;
+                instagram: string | null;
+                is_archived: boolean | null;
+                assignments: Student["activeAssignments"] | null;
             }
 
-            // Construir mapa de assignments
-            const assignmentsMap = new Map<
-                string,
-                {
-                    plan_id: string;
-                    plan_title: string;
-                    start_date: string;
-                    end_date: string;
-                    status: string;
-                    days_per_week: number;
-                }[]
-            >();
-
-            if (assignmentsData) {
-                for (const row of assignmentsData as unknown as {
-                    student_id: string;
-                    plan_id: string;
-                    start_date: string;
-                    end_date: string;
-                    status: string;
-                    training_plans: { title: string; total_days: number; days_per_week: number } | null;
-                }[]) {
-                    if (row.end_date) {
-                        const endDate = new Date(row.end_date + "T23:59:59");
-                        if (endDate < new Date()) continue;
-                    }
-                    const existing = assignmentsMap.get(row.student_id) || [];
-                    existing.push({
-                        plan_id: row.plan_id,
-                        plan_title: row.training_plans?.title || "Plan sin nombre",
-                        start_date: row.start_date,
-                        end_date: row.end_date,
-                        status: row.status,
-                        days_per_week:
-                            row.training_plans?.total_days ?? row.training_plans?.days_per_week ?? 3,
-                    });
-                    assignmentsMap.set(row.student_id, existing);
-                }
-            }
-
-            // Construir mapa de detalles
-            const detailsMap = new Map(
-                ((studentDetails as {
-                    id: string;
-                    profile_image_url: string | null;
-                    training_experience: string;
-                    primary_goal: string;
-                    activity_level: string;
-                    phone: string | null;
-                    instagram: string | null;
-                    is_archived: boolean;
-                }[]) || []).map((d) => [d.id, d]),
+            const transformed: Student[] = ((data ?? []) as StudentOverviewRow[]).map(
+                (row) => ({
+                    id: row.student_id,
+                    fullName: `${row.first_name} ${row.last_name}`,
+                    profileImageUrl: row.profile_image_url || null,
+                    trainingLevel: row.training_experience || "beginner",
+                    primaryGoal: row.primary_goal || "health",
+                    activityLevel: row.activity_level || "moderate",
+                    phone: row.phone || undefined,
+                    instagram: row.instagram || undefined,
+                    activeAssignments: row.assignments ?? [],
+                    isArchived: row.is_archived || false,
+                }),
             );
-
-            // Combinar y transformar
-            const transformed: Student[] = profilesData
-                .filter((p) => detailsMap.has(p.id))
-                .map((p) => {
-                    const details = detailsMap.get(p.id)!;
-                    return {
-                        id: p.id,
-                        fullName: `${p.first_name} ${p.last_name}`,
-                        profileImageUrl: details.profile_image_url || null,
-                        trainingLevel: details.training_experience || "beginner",
-                        primaryGoal: details.primary_goal || "health",
-                        activityLevel: details.activity_level || "moderate",
-                        phone: details.phone || undefined,
-                        instagram: details.instagram || undefined,
-                        activeAssignments: assignmentsMap.get(p.id) || [],
-                        isArchived: details.is_archived || false,
-                    };
-                });
 
             set({
                 students: transformed,
                 isStudentsLoaded: true,
                 isStudentsLoading: false,
+                studentsFetchedAt: Date.now(),
             });
         } catch (err) {
             console.error("[dataCacheStore] fetchStudents error:", err);
@@ -450,7 +394,8 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
 
     fetchPlans: async (professorId: string) => {
         const state = get();
-        if (state.isPlansLoaded || state.isPlansLoading) return;
+        if (state.isPlansLoading) return;
+        if (state.isPlansLoaded && Date.now() - state.plansFetchedAt < STALE_MS.plans) return;
 
         set({ isPlansLoading: true });
 
@@ -463,7 +408,9 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
             // Las mutaciones (editar, eliminar) siguen protegidas por coach_id en useTrainingPlans.
             const { data: plansData, error: fetchError } = await supabase
                 .from("training_plans")
-                .select(`*, training_plan_assignments(count)`)
+                .select(
+                    `id, coach_id, title, description, start_date, end_date, total_days, days_per_week, total_weeks, plan_type, is_template, is_archived, created_at, folder_id, training_plan_assignments(count)`,
+                )
                 .eq("is_archived", false)
                 .neq("training_plan_assignments.status", "cancelled")
                 .order("created_at", { ascending: false });
@@ -477,7 +424,12 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
                 }),
             );
 
-            set({ plans: transformed, isPlansLoaded: true, isPlansLoading: false });
+            set({
+                plans: transformed,
+                isPlansLoaded: true,
+                isPlansLoading: false,
+                plansFetchedAt: Date.now(),
+            });
         } catch (err) {
             console.error("[dataCacheStore] fetchPlans error:", err);
             set({ isPlansLoading: false });
@@ -490,7 +442,8 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
 
     fetchCategories: async () => {
         const state = get();
-        if (state.isCategoriesLoaded || state.isCategoriesLoading) return;
+        if (state.isCategoriesLoading) return;
+        if (state.isCategoriesLoaded && Date.now() - state.categoriesFetchedAt < STALE_MS.categories) return;
 
         set({ isCategoriesLoading: true });
 
@@ -506,6 +459,7 @@ export const useDataCacheStore = create<DataCacheState>()((set, get) => ({
                 categories: (data as ExerciseCategory[]) || [],
                 isCategoriesLoaded: true,
                 isCategoriesLoading: false,
+                categoriesFetchedAt: Date.now(),
             });
         } catch (err) {
             console.error("[dataCacheStore] fetchCategories error:", err);

@@ -79,7 +79,7 @@ export default function Login() {
       {/* Left Panel - Only visible on large screens */}
       <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden bg-[#0b1d3a]">
         {/* Gym background photo */}
-        <img
+        <img loading="lazy" decoding="async"
           alt="Gym background"
           className="absolute inset-0 w-full h-full object-cover object-center opacity-30"
           src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&q=80"
@@ -93,6 +93,8 @@ export default function Login() {
           <div className="bg-white rounded-3xl px-10 py-8 shadow-2xl">
             <img
               src="/logo-nuevo-sinfondo.svg"
+              width={209}
+              height={213}
               alt="Stability"
               className="w-64 h-auto object-contain"
             />
@@ -108,6 +110,8 @@ export default function Login() {
             <div className="bg-white/95 dark:bg-white p-4 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.05)] w-full max-w-[160px] flex items-center justify-center border border-slate-50">
               <img
                 src="/logo-nuevo-sinfondo.svg"
+                width={209}
+                height={213}
                 alt="Logo"
                 className="w-full h-auto object-contain drop-shadow-sm"
               />

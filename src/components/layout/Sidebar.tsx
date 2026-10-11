@@ -1,3 +1,4 @@
+import { avatarSrc } from "@/lib/avatar";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   X,
@@ -89,6 +90,8 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
           ) : (
             <img
               src="/logo-nuevo-sinfondo.svg"
+              width={209}
+              height={213}
               alt="Logo Stability"
               className="h-8 w-auto object-contain"
             />
@@ -158,7 +161,7 @@ export function Sidebar({ className, isOpen = false, onClose }: SidebarProps) {
               <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 shrink-0 overflow-hidden">
                 {professor?.profileImage ? (
                   <img
-                    src={professor.profileImage}
+                    src={avatarSrc(professor.profileImage, 36) ?? undefined}
                     alt={`${professor.firstName} ${professor.lastName}`}
                     className="w-full h-full object-cover"
                   />
