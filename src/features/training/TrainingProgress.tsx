@@ -257,7 +257,7 @@ function SectionTitle({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function TrainingProgress() {
-  const { professor } = useAuthStore();
+  const professor = useAuthStore((s) => s.professor);
   const { groups, loading } = useExerciseWeightLogs(professor?.id);
 
   const totalSessions = groups.reduce((acc, g) => acc + g.logs.length, 0);

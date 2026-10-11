@@ -4,10 +4,11 @@ import { Menu } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { useTrainingStore } from "@/features/training/store/trainingStore";
 import { InstallPWABanner } from "@/components/InstallPWABanner";
+import { FeedbackReminderToast } from "@/components/FeedbackReminderToast";
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { fetchGlobalExercises } = useTrainingStore();
+  const fetchGlobalExercises = useTrainingStore((s) => s.fetchGlobalExercises);
 
   useEffect(() => {
     // Pre-load exercises into Zustand global store when app mounts
@@ -59,6 +60,7 @@ export default function MainLayout() {
 
         {/* Scrollable page content */}
         <div className="flex-1 overflow-y-auto ios-scroll">
+          <FeedbackReminderToast />
           <InstallPWABanner />
           <Outlet />
         </div>

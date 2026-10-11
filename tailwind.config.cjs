@@ -73,6 +73,25 @@ module.exports = {
         "2xl": "1rem",
         full: "9999px",
       },
+      keyframes: {
+        // Recorre un círculo chico (radio 6px) a velocidad angular
+        // constante — timing "linear" en la animación, no ease-in-out,
+        // para que se sienta como un giro parejo y no un rebote.
+        "gentle-circle": {
+          "0%": { transform: "translate(6px, 0px)" },
+          "12.5%": { transform: "translate(4.2px, 4.2px)" },
+          "25%": { transform: "translate(0px, 6px)" },
+          "37.5%": { transform: "translate(-4.2px, 4.2px)" },
+          "50%": { transform: "translate(-6px, 0px)" },
+          "62.5%": { transform: "translate(-4.2px, -4.2px)" },
+          "75%": { transform: "translate(0px, -6px)" },
+          "87.5%": { transform: "translate(4.2px, -4.2px)" },
+          "100%": { transform: "translate(6px, 0px)" },
+        },
+      },
+      animation: {
+        "gentle-circle": "gentle-circle 3s linear infinite",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

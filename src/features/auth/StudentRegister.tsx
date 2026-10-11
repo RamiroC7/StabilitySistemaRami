@@ -20,7 +20,7 @@ type PersonalDataForm = z.infer<typeof personalDataSchema>
 export default function StudentRegister() {
     const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
     const navigate = useNavigate()
-    const { isLoading } = useAuthStore()
+    const isLoading = useAuthStore((s) => s.isLoading)
 
     const {
         register,

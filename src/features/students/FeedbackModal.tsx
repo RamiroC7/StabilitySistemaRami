@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import html2canvas from "html2canvas";
-import { Download, Loader2 } from "lucide-react";
+import { CalendarClock, Download, Loader2 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,23 @@ import {
   type FeedbackPeriod,
 } from "@/hooks/useFeedbackData";
 import FeedbackCard from "./FeedbackCard";
+
+// Fecha/hora legible en horario Argentina, sin importar en qué huso horario
+// esté el navegador de quien lo mira (el profesor puede estar viajando).
+function formatArtDateTime(d: Date): string {
+  const datePart = d.toLocaleDateString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const timePart = d.toLocaleTimeString("es-AR", {
+    timeZone: "America/Argentina/Buenos_Aires",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `${datePart} a las ${timePart}hs (hora ARG)`;
+}
 
 // Duplicados a propósito: StudentProfile.tsx y CoachContactButton.tsx ya
 // tienen su propia copia local de este mismo patrón (icono + formateo de
@@ -31,9 +48,31 @@ function WhatsAppIcon() {
   );
 }
 
+// html2canvas dibuja el DOM tal como está EN ESE INSTANTE. Si la foto del
+// alumno (<img>, cargada async desde Supabase Storage) todavía no terminó
+// de decodificar cuando se dispara la captura, el círculo sale en blanco en
+// la imagen descargada aunque en pantalla ya se vea bien — la carga
+// "alcanza" a completarse un instante después de que el usuario ve la
+// tarjeta, pero no necesariamente antes de que apriete "Descargar".
+async function waitForImages(element: HTMLElement): Promise<void> {
+  const images = Array.from(element.querySelectorAll("img"));
+  await Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+      return img
+        .decode()
+        .catch(() => {
+          // Imagen rota/URL vencida: no bloquear la exportación por esto,
+          // el resto de la tarjeta se sigue exportando igual.
+        });
+    }),
+  );
+}
+
 async function captureCardAsBlob(
   element: HTMLElement,
 ): Promise<Blob | null> {
+  await waitForImages(element);
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
@@ -63,6 +102,7 @@ interface FeedbackModalProps {
   studentId: string;
   studentName: string;
   studentPhone: string | null;
+  studentPhotoUrl: string | null;
 }
 
 export default function FeedbackModal({
@@ -71,14 +111,14 @@ export default function FeedbackModal({
   studentId,
   studentName,
   studentPhone,
+  studentPhotoUrl,
 }: FeedbackModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [period, setPeriod] = useState<FeedbackPeriod>("week");
-  const { data, loading } = useFeedbackData(studentId, period);
+  const { result, loading } = useFeedbackData(studentId, period);
   const [isExporting, setIsExporting] = useState(false);
 
-  const periodConfig = FEEDBACK_PERIODS.find((p) => p.key === period)!;
-  const fileName = `feedback-${periodConfig.key}-${studentName
+  const fileName = `feedback-${period}-${studentName
     .toLowerCase()
     .replace(/\s+/g, "-")}.png`;
 
@@ -160,14 +200,31 @@ export default function FeedbackModal({
           ))}
         </div>
 
-        {loading || !data ? (
+        {loading || !result ? (
           <div className="h-96 w-full flex items-center justify-center text-slate-400 text-sm">
             Cargando datos...
+          </div>
+        ) : !result.available ? (
+          <div className="h-96 w-full flex flex-col items-center justify-center text-center px-4 gap-3">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <CalendarClock size={22} />
+            </div>
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+              El feedback {period === "week" ? "semanal" : "mensual"} todavía no está disponible.
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Vas a poder verlo el {formatArtDateTime(result.nextAvailableAt)}.
+            </p>
           </div>
         ) : (
           <>
             <div className="max-w-full overflow-x-auto rounded-2xl shadow-lg">
-              <FeedbackCard ref={cardRef} studentName={studentName} data={data} />
+              <FeedbackCard
+                ref={cardRef}
+                studentName={studentName}
+                studentPhotoUrl={studentPhotoUrl}
+                data={result.data}
+              />
             </div>
 
             <div className="w-full flex flex-col gap-2.5">

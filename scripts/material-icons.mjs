@@ -67,6 +67,11 @@ export function iconsInIndexHtml(html) {
   return m ? new Set(m[1].split(",")) : null;
 }
 
+/** URL de Google Fonts con solo los iconos pedidos (ejes fijos FILL 0, wght 400). */
+export function fontUrl(names) {
+  return `https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@400,0&icon_names=${names.join(",")}&display=swap`;
+}
+
 function main() {
   const names = collectIconNames();
   if (process.argv.includes("--check")) {

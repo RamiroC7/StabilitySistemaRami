@@ -1651,6 +1651,7 @@ export default function StudentProfile() {
             studentId={studentId}
             studentName={student.fullName}
             studentPhone={student.phone}
+            studentPhotoUrl={student.profileImageUrl || null}
           />
         </Suspense>
       )}

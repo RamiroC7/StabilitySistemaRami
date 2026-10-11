@@ -34,7 +34,7 @@ export default function CreateExerciseModal({
     initialName,
     onSuccess,
 }: CreateExerciseModalProps) {
-    const { professor } = useAuthStore();
+    const professor = useAuthStore((s) => s.professor);
     const { categories, isLoading: isLoadingCats } = useCategories();
 
     const containerRef = useRef<HTMLDivElement>(null);
