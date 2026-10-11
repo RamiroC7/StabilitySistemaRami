@@ -71,6 +71,8 @@ interface AuthState {
 // Token expiry: Handled by Supabase
 const TOKEN_EXPIRY_TIME = 60 * 60 * 1000; // 60 minutes in ms
 
+const ACTIVITY_THROTTLE_MS = 60 * 1000;
+
 let inactivityTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Helper function to convert Supabase user to Professor
@@ -78,7 +80,7 @@ const userToProfessor = async (user: User): Promise<Professor | null> => {
   try {
     const profilePromise = supabase
       .from("profiles")
-      .select("*")
+      .select("id, email, first_name, last_name, role, created_at")
       .eq("id", user.id)
       .single();
 
@@ -110,7 +112,7 @@ const userToProfessor = async (user: User): Promise<Professor | null> => {
       // Fetch it again after creation
       const { data: newProfile, error: fetchError } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, email, first_name, last_name, role, created_at")
         .eq("id", user.id)
         .single();
 
@@ -310,6 +312,11 @@ export const useAuthStore = create<AuthState>()(
 
         updateActivity: () => {
           const now = Date.now();
+          // Throttle: este handler corre en scroll/touchstart/mousedown. Cada
+          // set() dispara el persist (escritura sincronica a localStorage) y
+          // notifica a los suscriptores, asi que se limita a 1 vez por minuto.
+          const last = get().lastActivity;
+          if (last !== null && now - last < ACTIVITY_THROTTLE_MS) return;
           set({ lastActivity: now });
 
           // Session persists until manual logout

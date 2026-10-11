@@ -30,3 +30,14 @@ dev-dist
 .vercel
 
 .mcp.json
+
+# Playwright
+playwright-report
+test-results
+
+# Analisis de bundle (ANALYZE=1)
+stats.html
+stats.json
+
+# Backups locales con fotos de alumnos (datos personales)
+backups/

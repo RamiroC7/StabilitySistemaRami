@@ -97,14 +97,15 @@ export default function CreateExerciseModal({
                     notes: data.notes?.trim() || null,
                     created_by: professor.id,
                 })
-                .select('*, category:exercise_categories(id, name, color)')
+                .select('id, name, video_url, notes, category_id, created_by, created_at, category:exercise_categories(id, name, color)')
                 .single();
 
             if (error) throw error;
 
             toast.success("Ejercicio creado exitosamente");
 
-            onSuccess(newExerciseData as LibraryExercise);
+            // El embed de category es many-to-one (objeto), aunque el tipo inferido sea array.
+            onSuccess(newExerciseData as unknown as LibraryExercise);
 
             reset();
             onClose();

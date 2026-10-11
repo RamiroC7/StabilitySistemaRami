@@ -51,6 +51,8 @@ export default function MainLayout() {
           </button>
           <img
             src="/logo-nuevo-sinfondo.svg"
+            width={209}
+            height={213}
             alt="Logo"
             className="h-8 w-auto object-contain mx-auto pr-8"
           />

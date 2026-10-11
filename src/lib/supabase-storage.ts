@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { compressAvatar } from "./compressAvatar";
 
 /**
  * Upload profile image to Supabase Storage
@@ -8,9 +9,10 @@ import { supabase } from "./supabase";
  */
 export async function uploadProfileImage(
   userId: string,
-  file: File,
+  originalFile: File,
 ): Promise<string | null> {
   try {
+    const file = await compressAvatar(originalFile);
     console.log("[uploadProfileImage] Iniciando subida de imagen:", {
       userId,
       fileName: file.name,
@@ -37,7 +39,8 @@ export async function uploadProfileImage(
     const { error } = await supabase.storage
       .from("profile-images")
       .upload(fileName, file, {
-        cacheControl: "3600",
+        // El nombre lleva timestamp: cada subida es una URL nueva, asi que es inmutable.
+        cacheControl: "31536000",
         upsert: true, // Replace if exists
       });
 

@@ -13,6 +13,15 @@ export interface PlanFolder {
   updated_at: string;
 }
 
+// Inserta o reemplaza por id y mantiene el orden por nombre. Idempotente: el
+// eco realtime de un cambio propio no duplica la carpeta ya agregada
+// optimistamente.
+function upsertFolder(list: PlanFolder[], folder: PlanFolder): PlanFolder[] {
+  return [...list.filter((f) => f.id !== folder.id), folder].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+}
+
 interface AuthState {
   professor: Professor | null;
 }
@@ -30,7 +39,7 @@ export function usePlanFolders() {
     if (!professor) return;
     const { data, error } = await supabase
       .from("plan_folders")
-      .select("*")
+      .select("id, coach_id, name, parent_id, created_at, updated_at")
       .order("name", { ascending: true });
     if (!error) setFolders((data as PlanFolder[]) ?? []);
     setLoading(false);
@@ -40,49 +49,6 @@ export function usePlanFolders() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchFolders();
   }, [fetchFolders]);
-
-  // Real-time subscription for folders
-  useEffect(() => {
-    if (!professor) return;
-
-    const channel = supabase
-      .channel("plan_folders:global")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "plan_folders",
-        },
-        () => {
-          fetchFolders();
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "training_plans",
-        },
-        (payload) => {
-          // Sync folder_id change from another device/tab into the local cache
-          const updated = payload.new as { id: string; folder_id: string | null };
-          setPlans(
-            useDataCacheStore
-              .getState()
-              .plans.map((p) =>
-                p.id === updated.id ? { ...p, folder_id: updated.folder_id } : p,
-              ),
-          );
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [professor, fetchFolders, setPlans]);
 
   const createFolder = async (name: string, parentId?: string | null) => {
     if (!professor) return { success: false, error: "No autenticado" };
@@ -97,9 +63,7 @@ export function usePlanFolders() {
 
     if (error) return { success: false, error: error.message };
     // Optimistic update — insert and keep sorted by name
-    setFolders((prev) =>
-      [...prev, data as PlanFolder].sort((a, b) => a.name.localeCompare(b.name)),
-    );
+    setFolders((prev) => upsertFolder(prev, data as PlanFolder));
     return { success: true };
   };
 

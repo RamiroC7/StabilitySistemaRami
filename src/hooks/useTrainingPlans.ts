@@ -102,7 +102,8 @@ export function useTrainingPlans() {
 
   // Keep a stable reference for the mutator functions below
   const professorId = professor?.id ?? "";
-  const loading = isLoading && !isLoaded;
+  // Solo hay "loading" si no hay nada que mostrar (SWR: con dato viejo no se vacia la UI).
+  const loading = isLoading && !isLoaded && plans.length === 0;
 
   const savePlan = async (planData: SavePlanData) => {
     if (!professor) {

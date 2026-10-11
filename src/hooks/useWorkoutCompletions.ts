@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import * as Sentry from "@sentry/react";
 import { supabase } from "@/lib/supabase";
+import { fetchAllRows } from "@/lib/supabasePagination";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import { useDataCacheStore } from "@/store/dataCacheStore";
 import type { SeriesLog } from "@/features/training/types";
@@ -103,22 +104,29 @@ export function useWorkoutCompletions(
       setError(null);
 
       try {
-        const { data, error: fetchErr } = await supabase
-          .from("workout_completions")
-          .select(
-            "id, assignment_id, day_number, completed_at, rpe, total_sets_done, duration_minutes",
-          )
-          .eq("student_id", studentId)
-          .order("completed_at", { ascending: false });
-
-        if (fetchErr) {
-          setError(fetchErr.message);
+        // R19: paginado (PostgREST corta en 1.000 filas sin avisar). El id
+        // desempata el orden para que las paginas no se solapen.
+        let data;
+        try {
+          data = await fetchAllRows((from, to) =>
+            supabase
+              .from("workout_completions")
+              .select(
+                "id, assignment_id, day_number, completed_at, rpe, total_sets_done, duration_minutes",
+              )
+              .eq("student_id", studentId)
+              .order("completed_at", { ascending: false })
+              .order("id")
+              .range(from, to),
+          );
+        } catch (fetchErr) {
+          setError(fetchErr instanceof Error ? fetchErr.message : "Error al cargar");
           return;
         }
 
         setWorkoutCompletionsData(
           studentId,
-          (data ?? []).map((row) => ({
+          data.map((row) => ({
             id: row.id,
             assignmentId: row.assignment_id,
             dayNumber: row.day_number,

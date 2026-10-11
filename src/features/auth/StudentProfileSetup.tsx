@@ -147,6 +147,8 @@ export default function StudentProfileSetup() {
           <div className="bg-white/95 dark:bg-white p-3 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] w-full max-w-[140px] flex items-center justify-center border border-slate-50">
             <img
               src="/logo-nuevo-sinfondo.svg"
+              width={209}
+              height={213}
               alt="Logo"
               className="w-full h-auto object-contain drop-shadow-sm"
             />

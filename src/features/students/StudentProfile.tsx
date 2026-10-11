@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { avatarSrc } from "@/lib/avatar";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   useStudentProfile,
@@ -37,10 +38,23 @@ import {
 import { supabase } from "@/lib/supabase";
 import { formatDateLocal } from "@/lib/utils";
 import { detectRpeAlert } from "@/lib/rpeHelpers";
-import PlanPreview from "@/features/library/PlanPreview";
 import ConfirmActionModal from "@/components/ConfirmActionModal";
-import { MacrocycleTab } from "@/components/MacrocycleTab";
-import FeedbackModal from "@/features/students/FeedbackModal";
+
+// Regla R1/R2: lo que solo se usa al abrir una pestana o un modal se carga
+// recien en ese momento (sale del chunk inicial de esta pantalla).
+const MacrocycleTab = lazy(() =>
+  import("@/components/MacrocycleTab").then((m) => ({ default: m.MacrocycleTab })),
+);
+const FeedbackModal = lazy(() => import("@/features/students/FeedbackModal"));
+const PlanPreview = lazy(() => import("@/features/library/PlanPreview"));
+
+function TabFallback() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  );
+}
 
 // ── Skeleton ───────────────────────────────────────────────────────────────
 
@@ -479,10 +493,12 @@ function HistorialTab({ plans }: { plans: AssignedPlan[] }) {
       </div>
 
       {selectedPlanId && (
-        <PlanPreview
-          planId={selectedPlanId}
-          onClose={() => setSelectedPlanId(null)}
-        />
+        <Suspense fallback={null}>
+          <PlanPreview
+            planId={selectedPlanId}
+            onClose={() => setSelectedPlanId(null)}
+          />
+        </Suspense>
       )}
     </>
   );
@@ -1185,7 +1201,7 @@ export default function StudentProfile() {
     );
   }
 
-  const avatarUrl = student.profileImageUrl || null;
+  const avatarUrl = avatarSrc(student.profileImageUrl, 112);
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-card-dark">
@@ -1215,11 +1231,7 @@ export default function StudentProfile() {
                       <div
                         className="h-28 w-28 rounded-full bg-gray-200 bg-cover bg-center ring-4 ring-blue-50 dark:ring-gray-700 shadow-md"
                         style={{
-                          backgroundImage: avatarUrl
-                            ? `url('${avatarUrl}')`
-                            : "url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23e5e7eb%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-family=%22system-ui%22 font-size=%2236%22 fill=%22%239ca3af%22%3E" +
-                              (student.firstName?.[0]?.toUpperCase() || "?") +
-                              "%3C/text%3E%3C/svg%3E')",
+                          backgroundImage: `url('${avatarUrl}')`,
                         }}
                       />
                     </div>
@@ -1441,11 +1453,13 @@ export default function StudentProfile() {
                     <ProgresoTab studentId={studentId} />
                   )}
                   {activeTab === "macrociclo" && studentId && (
-                    <MacrocycleTab
-                      studentId={studentId}
-                      studentCreatedAt={student.createdAt}
-                      studentName={student.fullName}
-                    />
+                    <Suspense fallback={<TabFallback />}>
+                      <MacrocycleTab
+                        studentId={studentId}
+                        studentCreatedAt={student.createdAt}
+                        studentName={student.fullName}
+                      />
+                    </Suspense>
                   )}
                 </div>
               </div>
@@ -1630,14 +1644,16 @@ export default function StudentProfile() {
       )}
 
       {showFeedbackModal && studentId && (
-        <FeedbackModal
-          isOpen={showFeedbackModal}
-          onClose={() => setShowFeedbackModal(false)}
-          studentId={studentId}
-          studentName={student.fullName}
-          studentPhone={student.phone}
-          studentPhotoUrl={student.profileImageUrl || null}
-        />
+        <Suspense fallback={null}>
+          <FeedbackModal
+            isOpen={showFeedbackModal}
+            onClose={() => setShowFeedbackModal(false)}
+            studentId={studentId}
+            studentName={student.fullName}
+            studentPhone={student.phone}
+            studentPhotoUrl={student.profileImageUrl || null}
+          />
+        </Suspense>
       )}
     </div>
   );

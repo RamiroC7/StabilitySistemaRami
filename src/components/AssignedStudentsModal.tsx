@@ -1,3 +1,4 @@
+import { avatarSrc } from "@/lib/avatar";
 import { useState, useEffect, useCallback, useRef, useId } from "react";
 import { useTrainingPlans } from "../hooks/useTrainingPlans";
 import { toast } from "sonner";
@@ -232,19 +233,13 @@ export default function AssignedStudentsModal({
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {student.avatarUrl ? (
-                          <img
-                            src={student.avatarUrl}
-                            alt={student.fullName}
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <span className="material-symbols-outlined text-primary text-lg">
-                            person
-                          </span>
-                        )}
+                        <img loading="lazy" decoding="async"
+                          src={avatarSrc(student.avatarUrl, 40)}
+                          alt={student.fullName}
+                          width={40}
+                          height={40}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
 
                       {/* Info */}

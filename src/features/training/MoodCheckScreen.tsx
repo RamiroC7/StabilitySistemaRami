@@ -116,6 +116,8 @@ export default function MoodCheckScreen() {
         <div className="bg-white/95 dark:bg-white p-4 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100/50 flex items-center justify-center mb-8 transform hover:scale-105 transition-all duration-500">
           <img
             src="/logo-nuevo-sinfondo.svg"
+            width={209}
+            height={213}
             alt="Logo"
             className="w-32 h-auto object-contain drop-shadow-sm"
           />

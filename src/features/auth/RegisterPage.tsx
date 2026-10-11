@@ -153,6 +153,8 @@ export default function RegisterPage() {
           <div className="bg-white/95 dark:bg-white p-6 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.1)] flex items-center justify-center transform transition-transform duration-500 hover:scale-[1.02]">
             <img
               src="/logo-nuevo-sinfondo.svg"
+              width={209}
+              height={213}
               alt="Logo"
               className="w-48 sm:w-56 h-auto object-contain drop-shadow-sm"
             />
@@ -168,6 +170,8 @@ export default function RegisterPage() {
             <div className="bg-white/95 dark:bg-white p-4 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.05)] w-full max-w-[160px] flex items-center justify-center border border-slate-50">
               <img
                 src="/logo-nuevo-sinfondo.svg"
+                width={209}
+                height={213}
                 alt="Logo"
                 className="w-full h-auto object-contain drop-shadow-sm"
               />

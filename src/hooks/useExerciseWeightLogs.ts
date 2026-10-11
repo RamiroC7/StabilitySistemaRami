@@ -155,33 +155,6 @@ export function useExerciseWeightLogs(studentId: string | undefined) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
 
-  // Realtime subscription para sincronizar cambios entre coach y alumno
-  useEffect(() => {
-    if (!studentId) return;
-
-    const channel = supabase
-      .channel(`exercise_weight_logs:${studentId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "exercise_weight_logs",
-          filter: `student_id=eq.${studentId}`,
-        },
-        () => {
-          // Cuando hay cualquier cambio (INSERT, UPDATE, DELETE), recargar
-          invalidateExerciseWeightLogs(studentId);
-          load();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [studentId, invalidateExerciseWeightLogs, load]);
-
   const groups = studentId ? exerciseWeightLogs[studentId] || [] : [];
   const loading = isFetching && !isLoaded;
 

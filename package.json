@@ -12,7 +12,11 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
-    "check:node-safe": "npm --workspace @stability/domain run check:node-safe"
+    "check:node-safe": "npm --workspace @stability/domain run check:node-safe",
+    "check:perf": "node scripts/check-perf-budget.mjs",
+    "test:e2e": "playwright test",
+    "check:migrations": "node scripts/check-migrations.mjs",
+    "check:icons": "node scripts/material-icons.mjs --check"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -44,6 +48,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.49.1",
     "@sentry/vite-plugin": "^3.5.0",
     "@types/html2canvas": "^0.5.35",
     "@types/node": "^24.10.11",
@@ -56,6 +61,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
+    "rollup-plugin-visualizer": "^5.12.0",
     "svgo": "^4.0.0",
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7",
