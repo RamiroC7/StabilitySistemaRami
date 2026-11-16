@@ -64,6 +64,46 @@ export function getCircuitBounds(
   };
 }
 
+// ─── Circuit set equalization ─────────────────────────────────────────────────
+
+/**
+ * En un circuito todos los ejercicios se hacen la misma cantidad de rondas,
+ * pero en el plan pueden quedar con series distintas (ej. un ejercicio sumado
+ * al circuito después de fijar las series). Si un ejercicio tiene menos series
+ * que el resto, la ronda extra queda trabada mostrando la serie anterior.
+ *
+ * Completa los ejercicios de cada circuito (bloque contiguo con el mismo
+ * circuit_group) hasta la mayor cantidad de series del bloque. Los ejercicios
+ * fuera de circuito no se tocan.
+ */
+export function equalizeCircuitSets(exercises: Exercise[]): Exercise[] {
+  const result = [...exercises];
+  let start = 0;
+  while (start < result.length) {
+    const group = result[start].circuit_group;
+    let end = start;
+    while (group && end + 1 < result.length && result[end + 1].circuit_group === group) {
+      end++;
+    }
+    if (group && end > start) {
+      const maxSets = Math.max(...result.slice(start, end + 1).map((ex) => ex.sets.length));
+      for (let i = start; i <= end; i++) {
+        const ex = result[i];
+        if (ex.sets.length < maxSets && ex.sets.length > 0) {
+          const template = ex.sets[ex.sets.length - 1];
+          const extra = Array.from({ length: maxSets - ex.sets.length }, (_, k) => ({
+            ...template,
+            setNumber: ex.sets.length + k + 1,
+          }));
+          result[i] = { ...ex, sets: [...ex.sets, ...extra] };
+        }
+      }
+    }
+    start = end + 1;
+  }
+  return result;
+}
+
 // ─── Circuit round state ──────────────────────────────────────────────────────
 
 export interface CircuitRoundState {

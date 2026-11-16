@@ -7,6 +7,7 @@ import type {
   Exercise,
   ExerciseSet,
 } from "@/features/training/types";
+import { equalizeCircuitSets } from "@/features/training/utils/circuitUtils";
 
 interface UseActiveDayExercisesReturn {
   workoutDay: WorkoutDay | null;
@@ -133,7 +134,7 @@ export function useActiveDayExercises(
         setDayExercisesData(id, {
           id: dayData.day_number,
           name: dayData.day_name,
-          exercises: mappedExercises,
+          exercises: equalizeCircuitSets(mappedExercises),
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error inesperado");
