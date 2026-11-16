@@ -9,6 +9,7 @@ import {
   NOSOTROS_VISITS_KEY,
   shouldShowVisitBadge,
 } from "@/features/training/news/newsStorageKeys";
+import { hasAnyUnseenNews } from "@/features/training/news/communityNews";
 
 const tabs: { label: string; icon: LucideIcon; path: string; showDot?: boolean }[] = [
   { label: "Inicio", icon: Home, path: "/entrenamiento" },
@@ -25,8 +26,8 @@ export default function TrainingLayout() {
   // fuera de este layout) y se remonta al volver al bottom nav — mismo
   // approach que TrainingCommunity para reflejar visitas frescas. Usa el
   // mismo contador que el puntito de "Nosotros" para que desaparezcan juntos.
-  const [showComunidadDot] = useState<boolean>(() =>
-    shouldShowVisitBadge(NOSOTROS_VISITS_KEY),
+  const [showComunidadDot] = useState<boolean>(
+    () => shouldShowVisitBadge(NOSOTROS_VISITS_KEY) || hasAnyUnseenNews(),
   );
 
   const activeTab = tabs.findIndex((t) => {

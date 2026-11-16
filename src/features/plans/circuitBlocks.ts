@@ -69,3 +69,41 @@ export function getBlocksForActiveDay(dayExs: PlanExercise[]): PlannerBlock[] {
 
   return blocks;
 }
+
+/**
+ * Iguala las series de cada circuito. En el planificador las series de un
+ * circuito se editan desde el encabezado (que muestra las del primer
+ * ejercicio), pero cada fila guarda su propio valor: si un ejercicio se suma
+ * al circuito con otras series, queda un valor oculto distinto y el alumno
+ * termina con rondas desparejas.
+ *
+ * Toma las series del primer ejercicio del bloque (o la primera no vacía, si
+ * esa está vacía) y se las pone a todos. Si se pasa `onlyExerciseId`, solo
+ * toca el circuito que contiene a ese ejercicio. Devuelve el mismo objeto para
+ * los ejercicios que no cambian.
+ */
+export function syncCircuitSeries(
+  exercises: PlanExercise[],
+  onlyExerciseId?: string,
+): PlanExercise[] {
+  const updates = new Map<string, PlanExercise["series"]>();
+  const dayIds = new Set(exercises.map((ex) => ex.day_id));
+
+  for (const dayId of dayIds) {
+    const blocks = getBlocksForActiveDay(exercises.filter((ex) => ex.day_id === dayId));
+    for (const block of blocks) {
+      if (block.type !== "circuit") continue;
+      if (onlyExerciseId && !block.exercises.some((ex) => ex.id === onlyExerciseId)) continue;
+      const base = block.exercises.find((ex) => ex.series !== "" && ex.series != null)?.series;
+      if (base === undefined) continue;
+      for (const ex of block.exercises) {
+        if (ex.series !== base) updates.set(ex.id, base);
+      }
+    }
+  }
+
+  if (updates.size === 0) return exercises;
+  return exercises.map((ex) =>
+    updates.has(ex.id) ? { ...ex, series: updates.get(ex.id)! } : ex,
+  );
+}

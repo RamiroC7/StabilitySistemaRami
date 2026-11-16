@@ -1,8 +1,12 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { markNewsSeen } from "@/features/training/news/communityNews";
 
 export default function NewsVideos() {
   const navigate = useNavigate();
+
+  useEffect(() => markNewsSeen("videos"), []);
 
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-[#1F2937] dark:text-gray-100 flex flex-col h-screen">

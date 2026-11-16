@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import ConfirmActionModal from "../../components/ConfirmActionModal";
 import SortableExerciseRow from "./SortableExerciseRow";
 import CircuitCard from "./CircuitCard";
-import { getBlocksForActiveDay } from "./circuitBlocks";
+import { getBlocksForActiveDay, syncCircuitSeries } from "./circuitBlocks";
 import {
   SELECTABLE_FIELDS,
   getSelectionBounds,
@@ -472,11 +472,14 @@ export default function NewPlan() {
     field: keyof PlanExercise,
     value: string | number | boolean,
   ) => {
-    commitExercises((prevExercises) =>
-      prevExercises.map((ex) =>
+    commitExercises((prevExercises) => {
+      const next = prevExercises.map((ex) =>
         ex.id === id ? { ...ex, [field]: value } : ex,
-      ),
-    );
+      );
+      // Al sumar/sacar un ejercicio de un circuito, sus series pasan a ser
+      // las del circuito (las que muestra el encabezado).
+      return field === "circuit_group" ? syncCircuitSeries(next, id) : next;
+    });
   };
 
   const handleStageChange = (exerciseId: string, stageId: string) => {
