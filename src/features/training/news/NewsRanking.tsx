@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { markNewsSeen } from "@/features/training/news/communityNews";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import {
@@ -19,6 +20,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { avatarSrc } from "@/lib/avatar";
 
 // ─── Month navigation helpers ────────────────────────────────────────────────
 const MONTH_NAMES = [
@@ -95,8 +97,8 @@ function Podium({
   const ordered = [second, first, third];
   const rankNums = [2, 1, 3];
   const blockH = ["h-28", "h-36", "h-24"];
-  const mascotH = ["h-[116px]", "h-[118px]", "h-[116px]"];
-  const mascotSrc = ["/2do-puesto.webp", "/1er-puesto.webp", "/3er-puesto.webp"];
+  // Foto de perfil del alumno en lugar del personaje (1° un poco más grande).
+  const photoPx = [64, 76, 64];
 
   return (
     <div className="flex items-end justify-center gap-1.5 pt-6 pb-0 px-4">
@@ -118,17 +120,24 @@ function Podium({
               </span>
             )}
 
-            {/* Mascot */}
-            <img loading="lazy" decoding="async"
-              src={mascotSrc[i]}
-              alt={`Puesto ${rankNum}`}
-              className={cn(
-                "object-contain drop-shadow-xl z-10 relative",
-                mascotH[i],
-                "-mb-1.5" // Slight overlap with the podium block
-              )}
-              draggable={false}
-            />
+            {/* Foto de perfil + medalla */}
+            <div className="relative z-10 mb-2">
+              <img
+                loading="lazy"
+                decoding="async"
+                src={avatarSrc(entry.profile_image, photoPx[i])}
+                alt={`${entry.first_name} ${entry.last_name} — puesto ${rankNum}`}
+                style={{ width: photoPx[i], height: photoPx[i] }}
+                className={cn(
+                  "rounded-full object-cover shadow-lg ring-offset-2 ring-offset-white dark:ring-offset-slate-950",
+                  RANK_STYLES[rankNum].ring,
+                )}
+                draggable={false}
+              />
+              <span className="absolute -bottom-1 -right-1 text-lg leading-none drop-shadow">
+                {RANK_STYLES[rankNum].icon}
+              </span>
+            </div>
 
             {/* Podium block */}
             <div
@@ -344,6 +353,9 @@ export default function NewsRanking() {
   const professor = useAuthStore((s) => s.professor);
   const currentId = professor?.id ?? "";
   const navigate = useNavigate();
+
+  // Entrar al ranking apaga el puntito de novedad del mes.
+  useEffect(() => markNewsSeen("ranking"), []);
 
   // Month navigation: start at current month
   const now = new Date();

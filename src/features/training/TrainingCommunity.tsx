@@ -9,6 +9,7 @@ import {
   NOSOTROS_VISITS_KEY,
   shouldShowVisitBadge,
 } from "@/features/training/news/newsStorageKeys";
+import { hasUnseenNews, type NewsSection } from "@/features/training/news/communityNews";
 
 // ── Section cards configuration ──
 const sections: {
@@ -18,6 +19,7 @@ const sections: {
   path: string;
   color: string;
   showDot?: boolean;
+  newsSection?: NewsSection;
 }[] = [
   {
     title: "Nosotros",
@@ -33,6 +35,7 @@ const sections: {
     icon: Trophy,
     path: "/entrenamiento/comunidad/ranking",
     color: "text-blue-500",
+    newsSection: "ranking",
   },
   {
     title: "Biblioteca de Videos",
@@ -40,6 +43,7 @@ const sections: {
     icon: Video,
     path: "/entrenamiento/comunidad/videos",
     color: "text-blue-500",
+    newsSection: "videos",
   },
   {
     title: "Bonificaciones",
@@ -47,6 +51,7 @@ const sections: {
     icon: Gift,
     path: "/entrenamiento/comunidad/bonificaciones",
     color: "text-blue-500",
+    newsSection: "bonificaciones",
   },
 ];
 
@@ -85,6 +90,9 @@ export default function TrainingCommunity() {
       <div className="px-4 pt-6 pb-24 space-y-3">
         {sections.map((section) => {
           const Icon = section.icon;
+          const showDot =
+            (section.showDot && showNosotrosDot) ||
+            (section.newsSection !== undefined && hasUnseenNews(section.newsSection));
           return (
             <button
               key={section.path}
@@ -103,8 +111,8 @@ export default function TrainingCommunity() {
                 )}
               >
                 <Icon className={cn("w-6 h-6", section.color)} strokeWidth={2} />
-                {/* Puntito de "no visto" — desaparece a partir de la 3ra visita */}
-                {section.showDot && showNosotrosDot && (
+                {/* Puntito de "no visto": Nosotros (primeras visitas) o novedad de la sección */}
+                {showDot && (
                   <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border-2 border-white dark:border-slate-900" />
                 )}
               </div>

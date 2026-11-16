@@ -8,6 +8,11 @@ import { useWorkoutCompletions } from "@/hooks/useWorkoutCompletions";
 import { useExerciseWeightLogs } from "@/hooks/useExerciseWeightLogs";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import {
+  markPlanNoticeSeen,
+  readSeenPlanNotices,
+  shouldAnnounceNewPlan,
+} from "@/lib/newPlanNotice";
 import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import {
@@ -51,6 +56,17 @@ export default function TrainingHome() {
   // ── Data hooks (assignment + completions fire in parallel) ──
   const { assignment, loading: assignmentLoading } = useActiveAssignment();
   const { completions } = useWorkoutCompletions();
+
+  // ── Aviso "nuevo plan": una sola vez por asignación nueva ──
+  useEffect(() => {
+    if (!assignment) return;
+    if (!shouldAnnounceNewPlan(assignment, readSeenPlanNotices())) return;
+    markPlanNoticeSeen(assignment.assignmentId);
+    toast.success("Tenés cargado tu nuevo plan, ¡a darlo todo! 💪", {
+      description: assignment.planTitle,
+      duration: 6000,
+    });
+  }, [assignment]);
 
   // ── Background prefetch: warm up /perfil and /progreso caches ──
   // Exercise weight logs land in Zustand; TrainingProgress will see them ready.

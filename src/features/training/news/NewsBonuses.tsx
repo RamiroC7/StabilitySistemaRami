@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { markNewsSeen } from "@/features/training/news/communityNews";
 import {
   ArrowLeft,
   User,
@@ -31,6 +33,8 @@ const tiers = [
 
 export default function NewsBonuses() {
   const navigate = useNavigate();
+
+  useEffect(() => markNewsSeen("bonificaciones"), []);
 
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-[#1F2937] dark:text-gray-100 flex flex-col min-h-full">
