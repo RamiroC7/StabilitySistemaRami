@@ -126,7 +126,11 @@ export default function PlanPreview({ planId, onClose }: PlanPreviewProps) {
     );
   }
 
-  const days = (plan.training_plan_days || []) as TrainingPlanDay[];
+  // Supabase no garantiza el orden de las relaciones anidadas: ordenamos igual
+  // que el planificador (NewPlan) y el PDF para que las pestañas coincidan.
+  const days = [...((plan.training_plan_days || []) as TrainingPlanDay[])].sort(
+    (a, b) => a.display_order - b.display_order || a.day_number - b.day_number,
+  );
   const currentDay = days[activeDay];
   const exercises = [...(currentDay?.training_plan_exercises || [])]
     .sort((a, b) => a.display_order - b.display_order) as TrainingPlanExercise[];
